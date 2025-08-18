@@ -1,0 +1,36 @@
+{
+  "name": "@housing-escrow/api",
+  "version": "1.0.0",
+  "description": "Backend API for housing escrow service",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "eslint src --ext .ts",
+    "clean": "rm -rf dist",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev"
+  },
+  "dependencies": {
+    "@fastify/cors": "^8.4.0",
+    "@fastify/jwt": "^7.2.0",
+    "@prisma/client": "^5.7.0",
+    "bcryptjs": "^2.4.3",
+    "fastify": "^4.24.0",
+    "node-fetch": "^3.3.2",
+    "pdf-lib": "^1.17.1",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "prisma": "^5.7.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}
