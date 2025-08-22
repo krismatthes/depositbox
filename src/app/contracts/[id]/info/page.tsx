@@ -27,20 +27,29 @@ export default function ContractInfoPage() {
       const createdContracts = JSON.parse(localStorage.getItem('created_contracts') || '[]')
       const foundContract = createdContracts.find((c: any) => c.id === contractId)
       
-      if (foundContract && foundContract.tenantInfoMissing) {
+      if (foundContract) {
         setContract(foundContract)
         // Pre-fill with user data if available and user is logged in
         if (user) {
           setFormData({
-            firstName: user.firstName || '',
-            lastName: user.lastName || '',
-            phone: '',
-            address: '',
-            cprNumber: ''
+            firstName: foundContract.tenant?.firstName || user.firstName || '',
+            lastName: foundContract.tenant?.lastName || user.lastName || '',
+            phone: foundContract.tenant?.phone || '',
+            address: foundContract.tenant?.address || '',
+            cprNumber: foundContract.tenant?.cprNumber || ''
+          })
+        } else if (foundContract.tenant) {
+          // Pre-fill with existing tenant data if available
+          setFormData({
+            firstName: foundContract.tenant.firstName || '',
+            lastName: foundContract.tenant.lastName || '',
+            phone: foundContract.tenant.phone || '',
+            address: foundContract.tenant.address || '',
+            cprNumber: foundContract.tenant.cprNumber || ''
           })
         }
       } else {
-        // Contract not found or doesn't need tenant info
+        // Contract not found
         setContract(null)
       }
     }
@@ -107,9 +116,31 @@ export default function ContractInfoPage() {
       <>
         <Navigation />
         <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-          <div className="text-center">
+          <div className="text-center max-w-md mx-auto">
             <h1 className="text-2xl font-bold text-slate-800 mb-4">Kontrakt ikke fundet</h1>
-            <p className="text-slate-600 mb-6">Kontrakten kunne ikke findes eller er allerede udfyldt.</p>
+            <p className="text-slate-600 mb-6">Kontrakten med ID "{params.id}" kunne ikke findes.</p>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
+              <h3 className="font-medium text-blue-800 mb-2">Mulige årsager:</h3>
+              <ul className="text-blue-700 text-sm space-y-1">
+                <li>• Kontrakten blev oprettet på en anden enhed</li>
+                <li>• Linket er ikke korrekt</li>
+                <li>• Kontrakten blev slettet</li>
+              </ul>
+            </div>
+            
+            <div className="mt-4">
+              <button
+                onClick={() => {
+                  const contracts = JSON.parse(localStorage.getItem('created_contracts') || '[]')
+                  console.log('All contracts in localStorage:', contracts)
+                  alert(`Fandt ${contracts.length} kontrakter i localStorage. Tjek konsollen for detaljer.`)
+                }}
+                className="text-sm bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded"
+              >
+                Debug: Vis alle kontrakter
+              </button>
+            </div>
           </div>
         </div>
       </>
@@ -138,24 +169,40 @@ export default function ContractInfoPage() {
               </div>
             </div>
             
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <div>
-                  <div className="font-medium text-blue-800 mb-2">Udlejer har anmodet om dine oplysninger</div>
-                  <div className="text-blue-700 text-sm">
-                    <strong>{contract.landlord.firstName} {contract.landlord.lastName}</strong> har sendt dig en lejekontrakt og beder dig udfylde dine personlige oplysninger inden underskrift.
-                  </div>
-                  {!user && (
-                    <div className="text-blue-600 text-sm mt-2">
-                      Du behøver ikke at oprette en konto - udfyld blot formularen nedenfor.
+{!contract.tenantInfoMissing && contract.tenant?.firstName ? (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-green-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div>
+                    <div className="font-medium text-green-800 mb-2">Oplysninger allerede udfyldt</div>
+                    <div className="text-green-700 text-sm">
+                      Denne kontrakt har allerede tenant oplysninger. Du kan stadig opdatere dem nedenfor hvis nødvendigt.
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div>
+                    <div className="font-medium text-blue-800 mb-2">Udlejer har anmodet om dine oplysninger</div>
+                    <div className="text-blue-700 text-sm">
+                      <strong>{contract.landlord?.firstName} {contract.landlord?.lastName}</strong> har sendt dig en lejekontrakt og beder dig udfylde dine personlige oplysninger inden underskrift.
+                    </div>
+                    {!user && (
+                      <div className="text-blue-600 text-sm mt-2">
+                        Du behøver ikke at oprette en konto - udfyld blot formularen nedenfor.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Form */}
