@@ -1,5 +1,7 @@
 // Secure cryptographic utilities using Node.js built-in crypto
 import crypto from 'crypto'
+// Note: Argon2 requires native binaries - falls back to bcryptjs on Vercel
+import bcrypt from 'bcryptjs' // Vercel-compatible alternative
 
 // Security configuration
 const SECURITY_CONFIG = {
@@ -11,19 +13,36 @@ const SECURITY_CONFIG = {
   REFRESH_TOKEN_TIMEOUT_MS: 7 * 24 * 60 * 60 * 1000, // 7 days
 } as const
 
-// Password hashing using PBKDF2 (built-in secure alternative to bcrypt)
+// Password hashing using bcryptjs (Vercel-compatible)
 export async function hashPassword(password: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const salt = crypto.randomBytes(32).toString('hex')
-    crypto.pbkdf2(password, salt, SECURITY_CONFIG.KEY_DERIVATION_ITERATIONS, 64, 'sha512', (err, derivedKey) => {
-      if (err) reject(err)
-      else resolve(`${salt}:${derivedKey.toString('hex')}`)
-    })
-  })
+  try {
+    // Use bcryptjs for Vercel compatibility - no native binaries needed
+    const saltRounds = SECURITY_CONFIG.PASSWORD_SALT_ROUNDS
+    return await bcrypt.hash(password, saltRounds)
+  } catch (error) {
+    throw new Error('Password hashing failed')
+  }
 }
 
 // Password verification
 export async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
+  try {
+    // Support both old PBKDF2 hashes and new bcrypt hashes
+    if (hashedPassword.includes(':')) {
+      // Legacy PBKDF2 hash - migrate to bcrypt on next login
+      return verifyLegacyPassword(password, hashedPassword)
+    }
+    
+    // New bcrypt hash
+    return await bcrypt.compare(password, hashedPassword)
+  } catch (error) {
+    console.error('Password verification error:', error.message)
+    return false
+  }
+}
+
+// Support for legacy PBKDF2 hashes (gradual migration)
+async function verifyLegacyPassword(password: string, hashedPassword: string): Promise<boolean> {
   return new Promise((resolve, reject) => {
     const [salt, hash] = hashedPassword.split(':')
     crypto.pbkdf2(password, salt, SECURITY_CONFIG.KEY_DERIVATION_ITERATIONS, 64, 'sha512', (err, derivedKey) => {
