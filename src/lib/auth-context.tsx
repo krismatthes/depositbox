@@ -48,7 +48,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to fetch user profile:', error)
       
       // Fallback for demo when API is not available
-      if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
+      if (error.code === 'ERR_NETWORK' || 
+          error.message?.includes('Network Error') ||
+          error.response?.status === 404 ||
+          error.response?.status === 503) {
         // Check if demo user exists in localStorage
         const demoUserStr = localStorage.getItem('demoUser')
         if (demoUserStr) {
@@ -81,8 +84,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(userData)
       console.log('User set:', userData)
     } catch (error: any) {
+      console.log('Login API error:', error)
+      console.log('Error code:', error.code)
+      console.log('Error status:', error.response?.status)
+      
       // Fallback for demo when API is not available
-      if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
+      if (error.code === 'ERR_NETWORK' || 
+          error.message?.includes('Network Error') ||
+          error.response?.status === 404 ||
+          error.response?.status === 503) {
         console.warn('API not available, using demo mode')
         
         // Check if demo user exists in localStorage
@@ -114,8 +124,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`
       setUser(userData)
     } catch (error: any) {
+      console.log('Registration API error:', error)
+      console.log('Error code:', error.code)
+      console.log('Error status:', error.response?.status)
+      
       // Fallback for demo when API is not available
-      if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
+      if (error.code === 'ERR_NETWORK' || 
+          error.message?.includes('Network Error') ||
+          error.response?.status === 404 ||
+          error.response?.status === 503) {
         console.warn('API not available, using demo mode')
         
         // Create demo user
