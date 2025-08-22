@@ -44,11 +44,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await api.get('/auth/profile')
       setUser(response.data.user)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch user profile:', error)
-      // Token might be invalid, clear it
-      Cookies.remove('token')
-      delete api.defaults.headers.common['Authorization']
+      
+      // Fallback for demo when API is not available
+      if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
+        // Check if demo user exists in localStorage
+        const demoUserStr = localStorage.getItem('demoUser')
+        if (demoUserStr) {
+          const demoUser = JSON.parse(demoUserStr)
+          setUser(demoUser)
+        } else {
+          // Token might be invalid, clear it
+          Cookies.remove('token')
+          delete api.defaults.headers.common['Authorization']
+        }
+      } else {
+        // Token might be invalid, clear it
+        Cookies.remove('token')
+        delete api.defaults.headers.common['Authorization']
+      }
     } finally {
       setLoading(false)
     }
@@ -65,24 +80,72 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`
       setUser(userData)
       console.log('User set:', userData)
-    } catch (error) {
+    } catch (error: any) {
+      // Fallback for demo when API is not available
+      if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
+        console.warn('API not available, using demo mode')
+        
+        // Check if demo user exists in localStorage
+        const demoUserStr = localStorage.getItem('demoUser')
+        if (demoUserStr) {
+          const demoUser = JSON.parse(demoUserStr)
+          if (demoUser.email === email) {
+            const token = `demo-token-${Date.now()}`
+            Cookies.set('token', token, { expires: 7 })
+            setUser(demoUser)
+            return
+          }
+        }
+        
+        throw new Error('Demo user not found. Please register first.')
+      }
+      
       console.error('Login API error:', error)
       throw error
     }
   }
 
   const register = async (email: string, password: string, firstName: string, lastName: string, phone?: string, role?: string) => {
-    const response = await api.post('/auth/register', { email, password, firstName, lastName, phone, role })
-    const { user: userData, token } = response.data
-    
-    Cookies.set('token', token, { expires: 7 })
-    api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-    setUser(userData)
+    try {
+      const response = await api.post('/auth/register', { email, password, firstName, lastName, phone, role })
+      const { user: userData, token } = response.data
+      
+      Cookies.set('token', token, { expires: 7 })
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+      setUser(userData)
+    } catch (error: any) {
+      // Fallback for demo when API is not available
+      if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
+        console.warn('API not available, using demo mode')
+        
+        // Create demo user
+        const userData = {
+          id: `demo-${Date.now()}`,
+          email,
+          firstName,
+          lastName,
+          phone,
+          role,
+          createdAt: new Date().toISOString()
+        }
+        
+        const token = `demo-token-${Date.now()}`
+        
+        // Store in localStorage for demo
+        localStorage.setItem('demoUser', JSON.stringify(userData))
+        Cookies.set('token', token, { expires: 7 })
+        setUser(userData)
+        return
+      }
+      
+      throw error
+    }
   }
 
   const logout = () => {
     Cookies.remove('token')
     delete api.defaults.headers.common['Authorization']
+    localStorage.removeItem('demoUser')
     setUser(null)
   }
 
