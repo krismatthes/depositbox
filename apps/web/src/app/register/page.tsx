@@ -26,6 +26,7 @@ export default function RegisterPage() {
     lastName: '',
     phone: '+45 '
   })
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [passwordRequirements, setPasswordRequirements] = useState({
@@ -48,13 +49,19 @@ export default function RegisterPage() {
       return
     }
 
+    if (!acceptedTerms) {
+      setError('Du skal acceptere vilkår og betingelser for at oprette en konto')
+      setLoading(false)
+      return
+    }
+
     try {
       await register(formData.email, formData.password, formData.firstName, formData.lastName, formData.phone, selectedRole)
-      // Redirect landlords directly to Nest creation, tenants to dashboard
+      // Redirect landlords and tenants to their respective onboarding
       if (selectedRole === 'LANDLORD') {
-        router.push('/nest/create-simple')
+        router.push('/nest/onboarding')
       } else {
-        router.push('/dashboard')
+        router.push('/tenant-onboarding')
       }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Registration failed')
@@ -417,10 +424,34 @@ export default function RegisterPage() {
               )}
             </div>
 
+            {/* Terms and Conditions Acceptance */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <input
+                  id="acceptTerms"
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-1"
+                />
+                <label htmlFor="acceptTerms" className="text-sm text-slate-700 leading-relaxed">
+                  Jeg accepterer BoligDeposits{' '}
+                  <Link href="/terms-of-service" target="_blank" className="text-blue-600 hover:text-blue-700 font-medium underline">
+                    Servicevilkår
+                  </Link>{' '}
+                  og{' '}
+                  <Link href="/privacy-policy" target="_blank" className="text-blue-600 hover:text-blue-700 font-medium underline">
+                    Privatlivspolitik
+                  </Link>
+                  . Jeg forstår, at mine personoplysninger vil blive behandlet i overensstemmelse med GDPR-lovgivningen.
+                </label>
+              </div>
+            </div>
+
             <div className="pt-6">
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !acceptedTerms}
                 className={`w-full px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none ${
                   selectedRole === 'LANDLORD'
                     ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white'
@@ -436,19 +467,20 @@ export default function RegisterPage() {
                   'Opret konto'
                 )}
               </button>
+              {!acceptedTerms && (
+                <p className="text-xs text-slate-500 mt-2 text-center">
+                  Du skal acceptere vilkår og betingelser for at fortsætte
+                </p>
+              )}
             </div>
           </form>
 
           <div className="mt-6 pt-6 border-t border-slate-200 text-center">
             <p className="text-sm text-slate-600">
-              Ved at oprette en konto accepterer du vores{' '}
-              <a href="#" className="text-blue-600 hover:text-blue-700 font-medium">
-                Vilkår & Betingelser
-              </a>{' '}
-              og{' '}
-              <a href="#" className="text-blue-600 hover:text-blue-700 font-medium">
-                Privatlivspolitik
-              </a>
+              Har du allerede en konto?{' '}
+              <Link href="/login" className="text-blue-600 hover:text-blue-700 font-medium">
+                Log ind her
+              </Link>
             </p>
           </div>
         </div>

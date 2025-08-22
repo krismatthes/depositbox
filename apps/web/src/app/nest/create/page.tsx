@@ -18,14 +18,17 @@ export default function CreateNestEscrowPage() {
 
   if (loading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-500"></div>
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-slate-900 mb-4 mx-auto"></div>
+          <p className="text-slate-600">Indlæser...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-white">
       <Navigation />
       <CreateNestEscrow />
     </div>

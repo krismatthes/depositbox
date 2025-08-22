@@ -72,12 +72,34 @@ export default function InviteTenantPage({ params }: { params: { id: string } })
     setSubmitting(true)
 
     try {
-      await api.post('/invitations/landlord-to-tenant', {
-        propertyId: params.id,
-        tenantName: `${formData.firstName} ${formData.lastName}`,
+      // Get property details first
+      const propertyData = property ? {
+        address: property.address,
+        type: property.propertyType || 'APARTMENT',
+        monthlyRent: property.monthlyRent || 0,
+        depositAmount: property.depositAmount || 0
+      } : {
+        address: 'Property address',
+        type: 'APARTMENT', 
+        monthlyRent: 0,
+        depositAmount: 0
+      }
+
+      await api.post('/tenant/invitations/create', {
+        invitationType: 'PROPERTY',
         tenantEmail: formData.email,
-        tenantPhone: formData.phone,
-        message: formData.message
+        tenantName: `${formData.firstName} ${formData.lastName}`,
+        propertyAddress: propertyData.address,
+        message: formData.message,
+        depositAmount: Math.round(propertyData.depositAmount * 100), // Convert to øre
+        rentAmount: Math.round(propertyData.monthlyRent * 100), // Convert to øre
+        prepaidAmount: 0,
+        utilitiesAmount: 0,
+        invitationData: {
+          propertyType: propertyData.type,
+          tenantPhone: formData.phone,
+          propertyId: params.id
+        }
       })
       setSuccess(true)
     } catch (err: any) {

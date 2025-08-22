@@ -152,8 +152,8 @@ export default function AdminEscrowsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-slate-800">💰 Escrow Administration</h1>
-            <p className="text-slate-600 mt-1">Administrer alle escrow-transaktioner</p>
+            <h1 className="text-3xl font-bold text-slate-800">💰 Depositums Box Administration</h1>
+            <p className="text-slate-600 mt-1">Administrer alle Depositums Box-transaktioner</p>
           </div>
         </div>
 
@@ -206,7 +206,7 @@ export default function AdminEscrowsPage() {
           <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-medium text-slate-600">Total Escrows</h3>
+                <h3 className="text-sm font-medium text-slate-600">Total Depositums Box</h3>
                 <p className="text-2xl font-bold text-slate-800 mt-2">{pagination.total}</p>
               </div>
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -218,7 +218,7 @@ export default function AdminEscrowsPage() {
           <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-medium text-slate-600">Aktive Escrows</h3>
+                <h3 className="text-sm font-medium text-slate-600">Aktive Depositums Box</h3>
                 <p className="text-2xl font-bold text-green-600 mt-2">
                   {escrows.filter(e => e.status === 'ACTIVE').length}
                 </p>
@@ -262,7 +262,7 @@ export default function AdminEscrowsPage() {
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-200">
             <h3 className="text-lg font-semibold text-slate-800">
-              Escrows ({pagination.total})
+              Depositums Box ({pagination.total})
             </h3>
           </div>
 
@@ -361,7 +361,7 @@ export default function AdminEscrowsPage() {
                   {escrows.length === 0 && (
                     <tr>
                       <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
-                        Ingen escrows fundet
+                        Ingen Depositums Box fundet
                       </td>
                     </tr>
                   )}
@@ -377,7 +377,7 @@ export default function AdminEscrowsPage() {
             <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
               <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
                 <h3 className="text-xl font-semibold text-slate-800">
-                  Escrow Detaljer
+                  Depositums Box Detaljer
                 </h3>
                 <button
                   onClick={() => setShowEscrowModal(false)}
@@ -393,7 +393,7 @@ export default function AdminEscrowsPage() {
                 {/* Basic Info */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <h4 className="font-semibold text-slate-800 mb-3">💰 Escrow Information</h4>
+                    <h4 className="font-semibold text-slate-800 mb-3">💰 Depositums Box Information</h4>
                     <div className="space-y-2 text-sm">
                       <div><span className="font-medium">ID:</span> {selectedEscrow.id}</div>
                       <div><span className="font-medium">Beløb:</span> {formatCurrency(selectedEscrow.totalAmount)}</div>
@@ -413,8 +413,8 @@ export default function AdminEscrowsPage() {
                       <div><span className="font-medium">Adresse:</span> {selectedEscrow.propertyAddress || selectedEscrow.propertyTitle || 'Ikke angivet'}</div>
                       {selectedEscrow.nestEscrow && (
                         <>
-                          <div><span className="font-medium">Tilknyttet Nest:</span> {selectedEscrow.nestEscrow.id}</div>
-                          <div><span className="font-medium">Nest Adresse:</span> {selectedEscrow.nestEscrow.address}</div>
+                          <div><span className="font-medium">Tilknyttet Depositums Box:</span> {selectedEscrow.nestEscrow.id}</div>
+                          <div><span className="font-medium">Depositums Box Adresse:</span> {selectedEscrow.nestEscrow.address}</div>
                           <div><span className="font-medium">Depositum:</span> {formatCurrency(selectedEscrow.nestEscrow.deposit)}</div>
                         </>
                       )}

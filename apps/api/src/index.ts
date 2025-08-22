@@ -16,6 +16,7 @@ import tenantInvitationRoutes from './routes/tenant-invitations'
 import mitIdAuthRoutes from './routes/mitid-auth'
 import adminRoutes from './routes/admin'
 import faqRoutes from './routes/faq'
+import twoFactorRoutes from './routes/two-factor'
 
 const prisma = new PrismaClient()
 const fastify = Fastify({ logger: true })
@@ -42,10 +43,11 @@ async function buildApp() {
   await fastify.register(savedContractsRoutes, { prefix: '/api' })
   await fastify.register(nestEscrowRoutes, { prefix: '/api' })
   await fastify.register(tenantProfileRoutes, { prefix: '/api' })
-  await fastify.register(tenantInvitationRoutes, { prefix: '/api' })
+  await fastify.register(tenantInvitationRoutes, { prefix: '/api/tenant/invitations' })
   await fastify.register(mitIdAuthRoutes, { prefix: '/api' })
   await fastify.register(adminRoutes, { prefix: '/api' })
   await fastify.register(faqRoutes)
+  await fastify.register(twoFactorRoutes, { prefix: '/api' })
 
   fastify.get('/health', async () => {
     return { status: 'ok', timestamp: new Date().toISOString() }

@@ -1,0 +1,14 @@
+[build]
+  base = "apps/web"
+  command = "npm run build"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[build.environment]
+  NODE_VERSION = "18"
+  NPM_VERSION = "8"
+
+# Environment variables configuration
+# Add these in Netlify dashboard under Site settings > Environment variables:
+# NEXT_PUBLIC_API_URL = your API URL (e.g., https://your-api.herokuapp.com)

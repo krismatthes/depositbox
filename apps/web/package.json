@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "next lint",
-    "clean": "rm -rf .next"
+    "clean": "rm -rf .next out",
+    "export": "next build && next export"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.0",
@@ -18,6 +19,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.48.0",
+    "resend": "^6.0.1",
     "zod": "^3.22.0"
   },
   "devDependencies": {

@@ -2,31 +2,11 @@
 
 import { useAuth } from '@/lib/auth-context'
 import Navigation from '@/components/Navigation'
+import Footer from '@/components/Footer'
 import Link from 'next/link'
-import { useState } from 'react'
 
 export default function HomePage() {
   const { user, loading } = useAuth()
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: ''
-  })
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }))
-  }
-
-  const handleDemoSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    // For now, just log the form data
-    console.log('Demo request:', formData)
-    alert('Tak for din interesse! Vi kontakter dig snarest.')
-    setFormData({ name: '', email: '', phone: '' })
-  }
 
   if (loading) {
     return (
@@ -52,10 +32,10 @@ export default function HomePage() {
           <div className="text-center">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-800 mb-6 leading-tight">
               Sikker depositum betaling
-              <span className="block text-blue-600 mt-2">med Nest service</span>
+              <span className="block text-blue-600 mt-2">med Depositums Box</span>
             </h1>
             <p className="text-xl text-slate-600 max-w-3xl mx-auto mb-12 leading-relaxed">
-              Revolutionér boligudlejning med vores professionelle Nest-service. Pengene er sikre 
+              Revolutionér boligudlejning med vores professionelle Depositums Box. Pengene er sikre 
               hos PayProff og frigives først når begge parter er tilfredse.
             </p>
             
@@ -67,7 +47,7 @@ export default function HomePage() {
                   </Link>
                   <div className="flex flex-col gap-3">
                     <Link href="/nest/create-simple" className="bg-white border-2 border-blue-600 text-blue-600 hover:bg-blue-50 px-8 py-4 rounded-xl text-lg font-semibold transition-all duration-300 text-center">
-                      🪺 Opret Nest Escrow
+                      📦 Opret Depositums Box
                     </Link>
                     
                     <div className="flex justify-center">
@@ -75,7 +55,7 @@ export default function HomePage() {
                         href="/properties/create"
                         className="text-sm text-slate-600 hover:text-slate-800 underline decoration-dotted transition-colors"
                       >
-                        Opret bolig uden Nest
+                        Opret bolig uden Depositums Box
                       </Link>
                     </div>
                   </div>
@@ -90,8 +70,11 @@ export default function HomePage() {
                         </svg>
                       </div>
                       <h3 className="text-xl font-bold text-slate-800 mb-3 group-hover:text-blue-700 transition-colors">Jeg er udlejer</h3>
+                      <div className="bg-green-100 text-green-700 text-xs font-semibold px-3 py-1 rounded-full mb-4 mx-auto inline-block">
+                        ✨ 100% GRATIS for udlejere
+                      </div>
                       <p className="text-slate-600 leading-relaxed flex-grow mb-6">
-                        Opret sikker deponering for dine lejere og få fuld kontrol over processen
+                        Skab tillid og virk professionel overfor potentielle lejere. Få sikker deponering uden omkostninger.
                       </p>
                       <div className="text-sm text-blue-600 font-semibold group-hover:text-blue-700 transition-colors">
                         Kom i gang →
@@ -107,6 +90,9 @@ export default function HomePage() {
                         </svg>
                       </div>
                       <h3 className="text-xl font-bold text-slate-800 mb-3 group-hover:text-green-700 transition-colors">Jeg er lejer</h3>
+                      <div className="bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1 rounded-full mb-4 mx-auto inline-block">
+                        🔒 Få sikkerhed fra kun 199,-
+                      </div>
                       <p className="text-slate-600 leading-relaxed flex-grow mb-6">
                         Betal dit depositum sikkert og få beskyttelse af dine penge
                       </p>
@@ -164,9 +150,9 @@ export default function HomePage() {
               <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 relative z-10">
                 <span className="text-2xl font-bold text-white">1</span>
               </div>
-              <h3 className="text-xl font-semibold text-slate-800 mb-4">Opret Nest</h3>
+              <h3 className="text-xl font-semibold text-slate-800 mb-4">Opret Depositums Box</h3>
               <p className="text-slate-600 leading-relaxed">
-                Udlejer eller lejer opretter en fælles Nest til pengene med boligoplysninger og depositum beløb
+                Udlejer eller lejer opretter en fælles Depositums Box til pengene med boligoplysninger og depositum beløb
               </p>
             </div>
             
@@ -176,7 +162,7 @@ export default function HomePage() {
               </div>
               <h3 className="text-xl font-semibold text-slate-800 mb-4">Sikker betaling</h3>
               <p className="text-slate-600 leading-relaxed">
-                Lejer betaler depositum til PayProff Nest - pengene er nu sikret og holdes i fælles neutral depot
+                Lejer betaler depositum til PayProff Depositums Box - pengene er nu sikret og holdes i fælles neutral depot
               </p>
             </div>
             
@@ -260,32 +246,35 @@ export default function HomePage() {
             </div>
 
             {/* Property Administrators */}
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-8 border border-purple-200">
-              <div className="w-16 h-16 bg-purple-600 rounded-2xl flex items-center justify-center mb-6">
+            <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl p-8 border border-slate-200 opacity-60 relative">
+              <div className="absolute top-4 right-4 bg-orange-100 text-orange-700 text-xs font-semibold px-3 py-1 rounded-full">
+                🚧 Kommer snart
+              </div>
+              <div className="w-16 h-16 bg-slate-400 rounded-2xl flex items-center justify-center mb-6">
                 <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-slate-800 mb-4">Ejendomsadministrator</h3>
-              <p className="text-lg text-purple-700 font-semibold mb-4">Automatiser og gør processen effektiv</p>
+              <h3 className="text-2xl font-bold text-slate-500 mb-4">Ejendomsadministrator</h3>
+              <p className="text-lg text-slate-500 font-semibold mb-4">Automatiser og gør processen effektiv</p>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
-                  <svg className="w-5 h-5 text-green-500 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-slate-400 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-slate-600">Håndter flere lejemål samtidigt</span>
+                  <span className="text-slate-500">Håndter flere lejemål samtidigt</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <svg className="w-5 h-5 text-green-500 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-slate-400 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-slate-600">Automatiseret workflow</span>
+                  <span className="text-slate-500">Automatiseret workflow</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <svg className="w-5 h-5 text-green-500 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-slate-400 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-slate-600">Komplet dokumentation</span>
+                  <span className="text-slate-500">Komplet dokumentation</span>
                 </li>
               </ul>
             </div>
@@ -293,146 +282,123 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Demo/CTA Section */}
-      <section id="demo" className="py-20 bg-gradient-to-br from-blue-50 to-blue-100">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Pricing Section */}
+      <section id="pricing" className="py-20 bg-gradient-to-br from-blue-50 to-blue-100">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold text-slate-800 mb-4">
+              Enkle og gennemsigtige priser
+            </h2>
+            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+              Kun lejeren betaler et gebyr. Udlejeren betaler intet for at bruge BoligDeposit.
+            </p>
+          </div>
+
           <div className="bg-white rounded-3xl shadow-xl p-8 lg:p-12">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl lg:text-4xl font-bold text-slate-800 mb-4">
-                Book en gratis demo
-              </h2>
-              <p className="text-xl text-slate-600">
-                Se hvordan Housing Escrow kan gøre dine udlejningsprocesser sikre og professionelle
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-600 rounded-full mb-6">
+                <span className="text-2xl font-bold text-white">3%</span>
+              </div>
+              <h3 className="text-3xl font-bold text-slate-800 mb-4">
+                3% af depositumbeløbet
+              </h3>
+              <p className="text-lg text-slate-600">
+                Minimum 199 DKK • Maksimum 799 DKK
               </p>
             </div>
 
-            <form onSubmit={handleDemoSubmit} className="max-w-lg mx-auto space-y-6">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-2">
-                  Fulde navn *
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  placeholder="Dit fulde navn"
-                />
+            <div className="grid md:grid-cols-3 gap-8 mb-12">
+              <div className="text-center p-6 bg-slate-50 rounded-2xl">
+                <div className="text-2xl font-bold text-slate-800 mb-2">5.000 DKK</div>
+                <div className="text-sm text-slate-600 mb-3">Depositum</div>
+                <div className="text-xl font-bold text-blue-600">199 DKK</div>
+                <div className="text-xs text-blue-500">Minimum gebyr</div>
               </div>
 
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
-                  Email adresse *
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  placeholder="din@email.dk"
-                />
+              <div className="text-center p-6 bg-blue-50 rounded-2xl border-2 border-blue-200">
+                <div className="text-2xl font-bold text-slate-800 mb-2">15.000 DKK</div>
+                <div className="text-sm text-slate-600 mb-3">Depositum</div>
+                <div className="text-xl font-bold text-blue-600">450 DKK</div>
+                <div className="text-xs text-blue-500">Standard gebyr</div>
               </div>
 
-              <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-slate-700 mb-2">
-                  Telefonnummer *
-                </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  placeholder="+45 12 34 56 78"
-                />
+              <div className="text-center p-6 bg-slate-50 rounded-2xl">
+                <div className="text-2xl font-bold text-slate-800 mb-2">30.000 DKK</div>
+                <div className="text-sm text-slate-600 mb-3">Depositum</div>
+                <div className="text-xl font-bold text-blue-600">799 DKK</div>
+                <div className="text-xs text-blue-500">Maksimum gebyr</div>
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8 mb-8">
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-slate-800">Hvad inkluderer gebyret?</h4>
+                <ul className="space-y-2">
+                  <li className="flex items-center gap-3">
+                    <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-slate-600">Sikker opbevaring hos PayProff</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-slate-600">Automatisk udbetaling</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-slate-600">Konfliktløsning</span>
+                  </li>
+                </ul>
               </div>
 
-              <button
-                type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl text-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-slate-800">Gratis for udlejere</h4>
+                <ul className="space-y-2">
+                  <li className="flex items-center gap-3">
+                    <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-slate-600">Ingen setup-omkostninger</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-slate-600">Ingen månedlige gebyrer</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-slate-600">Ubegrænset antal boliger</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <Link 
+                href="/pricing" 
+                className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl text-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 mr-4"
               >
-                Book en gratis demo
-              </button>
-            </form>
-
-            <p className="text-center text-sm text-slate-500 mt-6">
-              Vi kontakter dig inden for 24 timer og arrangerer en personlig demo
-            </p>
+                Se detaljerede priser
+              </Link>
+              <Link 
+                href="/register" 
+                className="inline-block bg-white border-2 border-blue-600 text-blue-600 hover:bg-blue-50 px-8 py-3 rounded-xl text-lg font-semibold transition-all duration-300"
+              >
+                Kom i gang
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-slate-800 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Housing Escrow</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                Sikker depositum service for den moderne boligudlejning
-              </p>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold mb-4">Kontakt</h4>
-              <ul className="space-y-2 text-sm text-slate-400">
-                <li>Email: info@housingescrow.dk</li>
-                <li>Telefon: +45 12 34 56 78</li>
-                <li>CVR: 12345678</li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold mb-4">Support</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="#" className="text-slate-400 hover:text-white transition-colors">Hjælp & Support</Link></li>
-                <li><Link href="#" className="text-slate-400 hover:text-white transition-colors">Priser</Link></li>
-                <li><Link href="#" className="text-slate-400 hover:text-white transition-colors">Sikkerhed</Link></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold mb-4">Juridisk</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="#" className="text-slate-400 hover:text-white transition-colors">Cookies</Link></li>
-                <li><Link href="#" className="text-slate-400 hover:text-white transition-colors">Privatlivspolitik</Link></li>
-                <li><Link href="#" className="text-slate-400 hover:text-white transition-colors">Handelsbetingelser</Link></li>
-              </ul>
-            </div>
-          </div>
-          
-          <div className="border-t border-slate-700 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-slate-400 text-sm">
-              &copy; 2024 Housing Escrow Service. Alle rettigheder forbeholdes.
-            </p>
-            <div className="flex space-x-4 mt-4 md:mt-0">
-              <Link href="#" className="text-slate-400 hover:text-white transition-colors">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/>
-                </svg>
-              </Link>
-              <Link href="#" className="text-slate-400 hover:text-white transition-colors">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M22.46 6c-.77.35-1.6.58-2.46.69.88-.53 1.56-1.37 1.88-2.38-.83.5-1.75.85-2.72 1.05C18.37 4.5 17.26 4 16 4c-2.35 0-4.27 1.92-4.27 4.29 0 .34.04.67.11.98C8.28 9.09 5.11 7.38 3 4.79c-.37.63-.58 1.37-.58 2.15 0 1.49.75 2.81 1.91 3.56-.71 0-1.37-.2-1.95-.5v.03c0 2.08 1.48 3.82 3.44 4.21a4.22 4.22 0 0 1-1.93.07 4.28 4.28 0 0 0 4 2.98 8.521 8.521 0 0 1-5.33 1.84c-.34 0-.68-.02-1.02-.06C3.44 20.29 5.7 21 8.12 21 16 21 20.33 14.46 20.33 8.79c0-.19 0-.37-.01-.56.84-.6 1.56-1.36 2.14-2.23z"/>
-                </svg>
-              </Link>
-              <Link href="#" className="text-slate-400 hover:text-white transition-colors">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                </svg>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }

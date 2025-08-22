@@ -148,8 +148,8 @@ export default function AdminNestsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-slate-800">🏠 Nest Administration</h1>
-            <p className="text-slate-600 mt-1">Administrer alle Nests og invitationer</p>
+            <h1 className="text-3xl font-bold text-slate-800">🏠 Depositums Box Administration</h1>
+            <p className="text-slate-600 mt-1">Administrer alle Depositums Box og invitationer</p>
           </div>
         </div>
 
@@ -202,7 +202,7 @@ export default function AdminNestsPage() {
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-200">
             <h3 className="text-lg font-semibold text-slate-800">
-              Nests ({pagination.total})
+              Depositums Box ({pagination.total})
             </h3>
           </div>
 
@@ -231,7 +231,7 @@ export default function AdminNestsPage() {
                       Status
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                      Escrow
+                      Depositums Box
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                       Oprettet
@@ -303,7 +303,7 @@ export default function AdminNestsPage() {
                             </div>
                           </div>
                         ) : (
-                          <span className="text-sm text-slate-400">Ingen escrow</span>
+                          <span className="text-sm text-slate-400">Ingen Depositums Box</span>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
@@ -328,7 +328,7 @@ export default function AdminNestsPage() {
           {pagination.pages > 1 && (
             <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-between">
               <div className="text-sm text-slate-700">
-                Viser {((pagination.page - 1) * pagination.limit) + 1} til {Math.min(pagination.page * pagination.limit, pagination.total)} af {pagination.total} nests
+                Viser {((pagination.page - 1) * pagination.limit) + 1} til {Math.min(pagination.page * pagination.limit, pagination.total)} af {pagination.total} Depositums Box
               </div>
               <div className="flex space-x-2">
                 <button
@@ -356,7 +356,7 @@ export default function AdminNestsPage() {
             <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
               <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
                 <h3 className="text-xl font-semibold text-slate-800">
-                  Nest Detaljer
+                  Depositums Box Detaljer
                 </h3>
                 <button
                   onClick={() => setShowNestModal(false)}
@@ -451,7 +451,7 @@ export default function AdminNestsPage() {
                 {/* Escrow Information */}
                 {selectedNest.escrow && (
                   <div>
-                    <h4 className="font-semibold text-slate-800 mb-3">💰 Escrow Information</h4>
+                    <h4 className="font-semibold text-slate-800 mb-3">💰 Depositums Box Information</h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                       <div>
                         <span className="font-medium">Status:</span> 
@@ -460,7 +460,7 @@ export default function AdminNestsPage() {
                         </span>
                       </div>
                       <div><span className="font-medium">Total beløb:</span> {formatCurrency(selectedNest.escrow.totalAmount)}</div>
-                      <div><span className="font-medium">Escrow ID:</span> {selectedNest.escrow.id}</div>
+                      <div><span className="font-medium">Depositums Box ID:</span> {selectedNest.escrow.id}</div>
                     </div>
                   </div>
                 )}

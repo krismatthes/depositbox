@@ -47,52 +47,57 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   const navigation = [
     {
-      name: '📊 Dashboard',
+      name: 'Dashboard',
       href: '/admin',
       icon: '📊'
     },
     {
-      name: '👥 Brugere',
+      name: 'Brugere',
       href: '/admin/users',
       icon: '👥'
     },
     {
-      name: '🏠 Nests',
+      name: 'Nests',
       href: '/admin/nests',
       icon: '🏠'
     },
     {
-      name: '💰 Escrows',
+      name: 'Escrows',
       href: '/admin/escrows',
       icon: '💰'
     },
     {
-      name: '✅ Verificeringer',
+      name: 'Verificeringer',
       href: '/admin/verifications',
       icon: '✅'
     },
     {
-      name: '📄 Dokumenter',
+      name: 'Dokumenter',
       href: '/admin/documents',
       icon: '📄'
     },
     {
-      name: '📧 Beskeder',
+      name: 'Beskeder',
       href: '/admin/messages',
       icon: '📧'
     },
     {
-      name: '📈 Rapporter',
+      name: 'Rapporter',
       href: '/admin/reports',
       icon: '📈'
     },
     {
-      name: '❓ FAQ',
+      name: 'Blog Admin',
+      href: '/admin/blog',
+      icon: '📝'
+    },
+    {
+      name: 'FAQ',
       href: '/admin/faq',
       icon: '❓'
     },
     {
-      name: '⚙️ System',
+      name: 'System',
       href: '/admin/system',
       icon: '⚙️'
     }

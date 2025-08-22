@@ -3,95 +3,75 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-
 model Property {
-  id              String   @id @default(cuid())
-  address         String
-  propertyType    String?   // APARTMENT, HOUSE, VILLA, TOWNHOUSE, STUDIO, ROOM
-  size            Int?      // Size in square meters
-  monthlyRent     Decimal
-  depositAmount   Decimal
-  prepaidRent     Decimal  @default(0)
-  currency        String   @default("DKK")
-  moveInDate      DateTime?
-  status          String   @default("ACTIVE") // ACTIVE, OCCUPIED
-  
-  landlordId      String
-  landlord        User     @relation(fields: [landlordId], references: [id])
-  
-  escrows         Escrow[]
-  invitations     Invitation[]
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String       @id @default(cuid())
+  address       String
+  propertyType  String?
+  size          Int?
+  monthlyRent   Decimal
+  depositAmount Decimal
+  prepaidRent   Decimal      @default(0)
+  currency      String       @default("DKK")
+  moveInDate    DateTime?
+  status        String       @default("ACTIVE")
+  landlordId    String
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  escrows       Escrow[]
+  invitations   Invitation[]
+  landlord      User         @relation(fields: [landlordId], references: [id])
 
   @@map("properties")
 }
 
 model Invitation {
-  id          String   @id @default(cuid())
-  token       String   @unique @default(cuid())
-  type        String   // LANDLORD_TO_TENANT, TENANT_TO_LANDLORD
-  status      String   @default("PENDING") // PENDING, ACCEPTED, EXPIRED
-  message     String?
-  
-  senderId    String
-  sender      User     @relation("InvitationSender", fields: [senderId], references: [id])
-  
-  receiverId  String?
-  receiver    User?    @relation("InvitationReceiver", fields: [receiverId], references: [id])
-  
-  propertyId  String?
-  property    Property? @relation(fields: [propertyId], references: [id])
-  
-  expiresAt   DateTime
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String    @id @default(cuid())
+  token      String    @unique @default(cuid())
+  type       String
+  status     String    @default("PENDING")
+  message    String?
+  senderId   String
+  receiverId String?
+  propertyId String?
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  property   Property? @relation(fields: [propertyId], references: [id])
+  receiver   User?     @relation("InvitationReceiver", fields: [receiverId], references: [id])
+  sender     User      @relation("InvitationSender", fields: [senderId], references: [id])
 
   @@map("invitations")
 }
 
 model Escrow {
-  id             String        @id @default(cuid())
-  totalAmount    Int           // Amount in øre
-  currency       String        @default("DKK")
-  status         String        @default("CREATED") // CREATED, FUNDED, RELEASED, CANCELLED
-  
-  propertyId     String?
-  property       Property?     @relation(fields: [propertyId], references: [id])
-  
-  // Legacy fields for backward compatibility
-  propertyTitle  String?
-  propertyAddress String?
-  
-  buyerId        String
-  buyer          User          @relation("BuyerEscrows", fields: [buyerId], references: [id])
-  
-  sellerId       String
-  seller         User          @relation("SellerEscrows", fields: [sellerId], references: [id])
-  
-  // General user relation for admin
-  userId         String?
-  user           User?         @relation("UserEscrows", fields: [userId], references: [id])
-  
-  // Link to NestEscrow
-  nestEscrowId   String?       @unique
-  nestEscrow     NestEscrow?   @relation(fields: [nestEscrowId], references: [id])
-  
+  id                    String      @id @default(cuid())
+  totalAmount           Int
+  currency              String      @default("DKK")
+  status                String      @default("CREATED")
+  propertyId            String?
+  propertyTitle         String?
+  propertyAddress       String?
+  buyerId               String
+  sellerId              String
+  userId                String?
+  nestEscrowId          String?     @unique
   payproffTransactionId String?
   payproffHostedUrl     String?
-  payoutSetupRequired   Boolean  @default(false)
-  
-  // Timeline tracking
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  fundedAt       DateTime?
-  releasedAt     DateTime?
-  plannedReleaseDate DateTime?
+  payoutSetupRequired   Boolean     @default(false)
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  fundedAt              DateTime?
+  releasedAt            DateTime?
+  plannedReleaseDate    DateTime?
+  buyer                 User        @relation("BuyerEscrows", fields: [buyerId], references: [id])
+  nestEscrow            NestEscrow? @relation(fields: [nestEscrowId], references: [id])
+  property              Property?   @relation(fields: [propertyId], references: [id])
+  seller                User        @relation("SellerEscrows", fields: [sellerId], references: [id])
+  user                  User?       @relation("UserEscrows", fields: [userId], references: [id])
 
   @@map("escrows")
 }
@@ -99,534 +79,432 @@ model Escrow {
 model DraftContract {
   id        String   @id @default(cuid())
   title     String
-  data      String   // JSON data of the contract
-  status    String   @default("DRAFT") // DRAFT, COMPLETED
-  
+  data      String
+  status    String   @default("DRAFT")
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
 
   @@map("draft_contracts")
 }
 
 model SavedContract {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   title           String
-  data            String   // JSON data of the completed contract
+  data            String
   propertyAddress String
-  tenantNames     String   // Comma-separated names
+  tenantNames     String
   monthlyRent     Decimal
   moveInDate      DateTime?
-  
   userId          String
-  user            User     @relation(fields: [userId], references: [id])
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id])
 
   @@map("saved_contracts")
 }
 
-// ============ NEST ESCROW MODELS ============
-
 model NestEscrow {
-  id              String   @id @default(cuid())
-  contractId      String?  // Reference to lease contract
-  type            String   @default("DEPOSIT") // DEPOSIT, RENT
-  status          String   @default("DRAFT") // DRAFT, AGREED, FUNDED, ACTIVE, RELEASE_PENDING, RELEASED, PARTIALLY_RELEASED, DISPUTED, ESCALATED, CLOSED
-  version         Int      @default(1) // Contract versioning
-  
-  // Parter
-  landlordId      String
-  landlord        User     @relation("LandlordNestEscrows", fields: [landlordId], references: [id])
-  tenantId        String
-  tenant          User     @relation("TenantNestEscrows", fields: [tenantId], references: [id])
-  
-  // Ejendom information
-  address           String?
-  propertyPostcode  String?
-  propertyCity      String?
-  propertyType      String?
-  
-  // Beløb (i øre for præcision)
-  deposit           Int      @default(0) // Depositum
-  rent              Int      @default(0) // Månedlig leje
-  prepaidRent       Int      @default(0) // Forudbetalt leje
-  utilitiesAmount   Int      @default(0) // A conto betalinger
-  totalAmount       Int      @default(0) // Total beløb
-  
-  // Datoer
-  startDate       DateTime?  // Lejemål start
-  endDate         DateTime?  // Lejemål slut (hvis tidsbegrænset)
-  moveInDate      DateTime?  // Faktisk indflytningsdato
-  moveOutDate     DateTime?  // Faktisk fraflytningsdato
-  
-  // Deadline konfiguration
-  claimWindowDays     Int      @default(14) // Dage til at rejse krav efter fraflytning
-  responseWindowDays  Int      @default(5)  // Dage til at svare på krav
-  autoReleaseDays     Int      @default(21) // Automatisk frigivelse efter dage
-  settlementRounds    Int      @default(2)  // Max forligsrunder
-  
-  // State timestamps
-  agreedAt        DateTime?
-  fundedAt        DateTime?
-  activatedAt     DateTime?
-  releasePendingAt DateTime?
-  releasedAt      DateTime?
-  disputedAt      DateTime?
-  escalatedAt     DateTime?
-  closedAt        DateTime?
-  
-  // Metadata
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Relationer
-  escrow          Escrow?
-  releaseRules    NestReleaseRule[]
-  transactions    NestTransaction[]
-  approvals       NestApproval[]
-  auditLogs       NestAuditLog[]
-  disputes        NestDispute[]
-  claims          NestClaim[]
-  evidence        NestEvidence[]
-  contracts       NestContract[]
-  deadlines       NestDeadline[]
-  invitations     LandlordInvitation[] @relation("NestInvitations")
+  id                 String               @id @default(cuid())
+  contractId         String?
+  type               String               @default("DEPOSIT")
+  status             String               @default("DRAFT")
+  version            Int                  @default(1)
+  landlordId         String
+  tenantId           String
+  address            String?
+  propertyPostcode   String?
+  propertyCity       String?
+  propertyType       String?
+  deposit            Int                  @default(0)
+  rent               Int                  @default(0)
+  prepaidRent        Int                  @default(0)
+  utilitiesAmount    Int                  @default(0)
+  totalAmount        Int                  @default(0)
+  startDate          DateTime?
+  endDate            DateTime?
+  moveInDate         DateTime?
+  moveOutDate        DateTime?
+  claimWindowDays    Int                  @default(14)
+  responseWindowDays Int                  @default(5)
+  autoReleaseDays    Int                  @default(21)
+  settlementRounds   Int                  @default(2)
+  agreedAt           DateTime?
+  fundedAt           DateTime?
+  activatedAt        DateTime?
+  releasePendingAt   DateTime?
+  releasedAt         DateTime?
+  disputedAt         DateTime?
+  escalatedAt        DateTime?
+  closedAt           DateTime?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  escrow             Escrow?
+  invitations        LandlordInvitation[] @relation("NestInvitations")
+  approvals          NestApproval[]
+  auditLogs          NestAuditLog[]
+  claims             NestClaim[]
+  contracts          NestContract[]
+  deadlines          NestDeadline[]
+  disputes           NestDispute[]
+  landlord           User                 @relation("LandlordNestEscrows", fields: [landlordId], references: [id])
+  tenant             User                 @relation("TenantNestEscrows", fields: [tenantId], references: [id])
+  evidence           NestEvidence[]
+  releaseRules       NestReleaseRule[]
+  transactions       NestTransaction[]
+  tenantInvitations  TenantInvitation[]   @relation("TenantInvitations")
 
   @@map("nest_escrows")
 }
 
 model NestReleaseRule {
-  id                      String   @id @default(cuid())
-  escrowId                String
-  escrow                  NestEscrow @relation(fields: [escrowId], references: [id], onDelete: Cascade)
-  
-  type                    String   // AUTOMATIC, MANUAL
-  triggerType             String   // MOVE_IN, LEASE_END, SCHEDULED_DATE, TIME_BASED, MANUAL_REQUEST
-  
-  // Betingelser
-  triggerDate             DateTime?
-  amount                  Int?     // Fast beløb
-  percentage              Decimal? // Procentdel
-  
-  // Sikkerhedsindstillinger
-  requiresNotification    Boolean  @default(true)
-  notificationDaysBefore  Int      @default(7)
-  allowObjection          Boolean  @default(true)
-  objectionPeriodDays     Int      @default(14)
-  
-  status                  String   @default("ACTIVE") // ACTIVE, TRIGGERED, EXECUTED, CANCELLED
-  
-  // Tidsstempler
-  triggeredAt             DateTime?
-  executedAt              DateTime?
-  createdAt               DateTime @default(now())
-  
-  // Relationer
-  approvals               NestApproval[]
+  id                     String         @id @default(cuid())
+  escrowId               String
+  type                   String
+  triggerType            String
+  triggerDate            DateTime?
+  amount                 Int?
+  percentage             Decimal?
+  requiresNotification   Boolean        @default(true)
+  notificationDaysBefore Int            @default(7)
+  allowObjection         Boolean        @default(true)
+  objectionPeriodDays    Int            @default(14)
+  status                 String         @default("ACTIVE")
+  triggeredAt            DateTime?
+  executedAt             DateTime?
+  createdAt              DateTime       @default(now())
+  approvals              NestApproval[]
+  escrow                 NestEscrow     @relation(fields: [escrowId], references: [id], onDelete: Cascade)
 
   @@map("nest_release_rules")
 }
 
 model NestTransaction {
-  id                  String   @id @default(cuid())
-  escrowId            String
-  escrow              NestEscrow @relation(fields: [escrowId], references: [id], onDelete: Cascade)
-  
-  type                String   // DEPOSIT, RELEASE, REFUND, DEDUCTION
-  amount              Int      // Beløb i øre
-  
-  // Aktør og begrundelse
-  initiatedById       String
-  initiatedBy         User     @relation("InitiatedTransactions", fields: [initiatedById], references: [id])
-  reason              String?
-  
-  // Status og timing
-  status              String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED, CANCELLED
-  scheduledDate       DateTime?
-  executedAt          DateTime?
-  
-  // Eksterne referencer
-  paymentReference    String?
-  bankTransactionId   String?
-  
-  createdAt           DateTime @default(now())
-  
-  // Relationer
-  approvals           NestApproval[]
+  id                String         @id @default(cuid())
+  escrowId          String
+  type              String
+  amount            Int
+  initiatedById     String
+  reason            String?
+  status            String         @default("PENDING")
+  scheduledDate     DateTime?
+  executedAt        DateTime?
+  paymentReference  String?
+  bankTransactionId String?
+  createdAt         DateTime       @default(now())
+  approvals         NestApproval[]
+  escrow            NestEscrow     @relation(fields: [escrowId], references: [id], onDelete: Cascade)
+  initiatedBy       User           @relation("InitiatedTransactions", fields: [initiatedById], references: [id])
 
   @@map("nest_transactions")
 }
 
 model NestApproval {
-  id                      String   @id @default(cuid())
-  
-  // Tilknytning til escrow
-  escrowId                String
-  escrow                  NestEscrow @relation(fields: [escrowId], references: [id], onDelete: Cascade)
-  
-  // Hvad der godkendes
-  transactionId           String?
-  transaction             NestTransaction? @relation(fields: [transactionId], references: [id], onDelete: Cascade)
-  releaseRuleId           String?
-  releaseRule             NestReleaseRule? @relation(fields: [releaseRuleId], references: [id], onDelete: Cascade)
-  
-  // Godkender
-  approverId              String
-  approver                User     @relation("NestApprovals", fields: [approverId], references: [id])
-  approverRole            String   // LANDLORD, TENANT
-  
-  // Godkendelse
-  status                  String   @default("PENDING") // PENDING, APPROVED, REJECTED, EXPIRED
-  responseAt              DateTime?
-  comment                 String?
-  
-  // Tidsfrister
-  deadline                DateTime?
-  autoApproveOnTimeout    Boolean  @default(false)
-  
-  createdAt               DateTime @default(now())
+  id                   String           @id @default(cuid())
+  escrowId             String
+  transactionId        String?
+  releaseRuleId        String?
+  approverId           String
+  approverRole         String
+  status               String           @default("PENDING")
+  responseAt           DateTime?
+  comment              String?
+  deadline             DateTime?
+  autoApproveOnTimeout Boolean          @default(false)
+  createdAt            DateTime         @default(now())
+  approver             User             @relation("NestApprovals", fields: [approverId], references: [id])
+  escrow               NestEscrow       @relation(fields: [escrowId], references: [id], onDelete: Cascade)
+  releaseRule          NestReleaseRule? @relation(fields: [releaseRuleId], references: [id], onDelete: Cascade)
+  transaction          NestTransaction? @relation(fields: [transactionId], references: [id], onDelete: Cascade)
 
   @@map("nest_approvals")
 }
 
 model NestDispute {
-  id                  String   @id @default(cuid())
-  escrowId            String
-  escrow              NestEscrow @relation(fields: [escrowId], references: [id], onDelete: Cascade)
-  
-  // Tvist detaljer
-  initiatedById       String
-  initiatedBy         User     @relation("InitiatedDisputes", fields: [initiatedById], references: [id])
-  reason              String
-  amount              Int?     // Disputeret beløb
-  
-  status              String   @default("OPEN") // OPEN, IN_MEDIATION, RESOLVED, ESCALATED
-  resolution          String?  // Løsning når lukket
-  
-  // Tidslinjer
-  createdAt           DateTime @default(now())
-  resolvedAt          DateTime?
+  id            String     @id @default(cuid())
+  escrowId      String
+  initiatedById String
+  reason        String
+  amount        Int?
+  status        String     @default("OPEN")
+  resolution    String?
+  createdAt     DateTime   @default(now())
+  resolvedAt    DateTime?
+  escrow        NestEscrow @relation(fields: [escrowId], references: [id], onDelete: Cascade)
+  initiatedBy   User       @relation("InitiatedDisputes", fields: [initiatedById], references: [id])
 
   @@map("nest_disputes")
 }
 
 model NestAuditLog {
-  id              String   @id @default(cuid())
+  id              String     @id @default(cuid())
   escrowId        String
-  escrow          NestEscrow @relation(fields: [escrowId], references: [id], onDelete: Cascade)
-  
-  // Handling
-  action          String   // CREATED, DEPOSITED, RELEASE_REQUESTED, APPROVED, etc.
+  action          String
   performedById   String
-  performedBy     User     @relation("PerformedActions", fields: [performedById], references: [id])
-  performedByRole String   // LANDLORD, TENANT, SYSTEM, ADMIN
-  
-  // Detaljer (JSON format)
-  details         String?  // JSON string med detaljer
+  performedByRole String
+  details         String?
   ipAddress       String?
-  
-  // Verifikation
-  hash            String?  // For integritet
-  
-  createdAt       DateTime @default(now())
+  hash            String?
+  createdAt       DateTime   @default(now())
+  escrow          NestEscrow @relation(fields: [escrowId], references: [id], onDelete: Cascade)
+  performedBy     User       @relation("PerformedActions", fields: [performedById], references: [id])
 
   @@map("nest_audit_log")
 }
 
-// ============ NEW SPEC MODELS ============
-
 model NestContract {
-  id              String   @id @default(cuid())
-  escrowId        String
-  escrow          NestEscrow @relation(fields: [escrowId], references: [id], onDelete: Cascade)
-  
-  version         Int      // Version number
-  status          String   @default("DRAFT") // DRAFT, AGREED, SUPERSEDED
-  
-  // Contract terms (JSON format for flexibility)
-  terms           String   // JSON with all contract terms
-  hash            String   // Hash for integrity verification
-  
-  // Signatures
+  id               String     @id @default(cuid())
+  escrowId         String
+  version          Int
+  status           String     @default("DRAFT")
+  terms            String
+  hash             String
   landlordSignedAt DateTime?
   tenantSignedAt   DateTime?
-  
-  createdAt       DateTime @default(now())
-  
+  createdAt        DateTime   @default(now())
+  escrow           NestEscrow @relation(fields: [escrowId], references: [id], onDelete: Cascade)
+
   @@map("nest_contracts")
 }
 
 model NestClaim {
-  id              String   @id @default(cuid())
-  escrowId        String
-  escrow          NestEscrow @relation(fields: [escrowId], references: [id], onDelete: Cascade)
-  
-  // Claim details
-  claimantId      String   // Who made the claim
-  claimant        User     @relation("NestClaims", fields: [claimantId], references: [id])
-  type            String   // DEDUCTION, REFUND, DISPUTE
-  amount          Int      // Amount claimed (in øre)
-  description     String   // Reason for claim
-  
-  // Status tracking
-  status          String   @default("PENDING") // PENDING, ACCEPTED, REJECTED, COUNTER_OFFERED, ESCALATED
-  currentRound    Int      @default(1) // Settlement round
-  
-  // Response tracking
+  id               String              @id @default(cuid())
+  escrowId         String
+  claimantId       String
+  type             String
+  amount           Int
+  description      String
+  status           String              @default("PENDING")
+  currentRound     Int                 @default(1)
   responseDeadline DateTime
-  respondedAt     DateTime?
-  responseAction  String?  // ACCEPT, REJECT, COUNTER_OFFER
-  
-  createdAt       DateTime @default(now())
-  
-  // Relations
-  evidence        NestEvidence[]
-  responses       NestClaimResponse[]
-  
+  respondedAt      DateTime?
+  responseAction   String?
+  createdAt        DateTime            @default(now())
+  responses        NestClaimResponse[]
+  claimant         User                @relation("NestClaims", fields: [claimantId], references: [id])
+  escrow           NestEscrow          @relation(fields: [escrowId], references: [id], onDelete: Cascade)
+  evidence         NestEvidence[]
+
   @@map("nest_claims")
 }
 
 model NestClaimResponse {
-  id              String   @id @default(cuid())
-  claimId         String
-  claim           NestClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
-  
-  responderId     String
-  responder       User     @relation("NestClaimResponses", fields: [responderId], references: [id])
-  
-  action          String   // ACCEPT, REJECT, COUNTER_OFFER
-  amount          Int?     // Counter offer amount
-  comment         String?  // Reason/explanation
-  
-  createdAt       DateTime @default(now())
-  
+  id          String    @id @default(cuid())
+  claimId     String
+  responderId String
+  action      String
+  amount      Int?
+  comment     String?
+  createdAt   DateTime  @default(now())
+  claim       NestClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  responder   User      @relation("NestClaimResponses", fields: [responderId], references: [id])
+
   @@map("nest_claim_responses")
 }
 
 model NestEvidence {
-  id              String   @id @default(cuid())
-  escrowId        String
-  escrow          NestEscrow @relation(fields: [escrowId], references: [id], onDelete: Cascade)
-  
-  claimId         String?  // Optional - evidence can be general or claim-specific
-  claim           NestClaim? @relation(fields: [claimId], references: [id], onDelete: Cascade)
-  
-  // Evidence details
-  uploadedById    String
-  uploadedBy      User     @relation("NestEvidence", fields: [uploadedById], references: [id])
-  
-  type            String   // PHOTO, VIDEO, DOCUMENT, RECEIPT, REPORT
-  title           String
-  description     String?
-  
-  // File information
-  fileName        String
-  filePath        String
-  fileSize        Int
-  mimeType        String
-  hash            String   // File hash for integrity
-  
-  // Metadata
-  category        String?  // MOVE_IN, MOVE_OUT, MAINTENANCE, DAMAGE, OTHER
-  roomLocation    String?  // Which room/area
-  
-  createdAt       DateTime @default(now())
-  
+  id           String     @id @default(cuid())
+  escrowId     String
+  claimId      String?
+  uploadedById String
+  type         String
+  title        String
+  description  String?
+  fileName     String
+  filePath     String
+  fileSize     Int
+  mimeType     String
+  hash         String
+  category     String?
+  roomLocation String?
+  createdAt    DateTime   @default(now())
+  claim        NestClaim? @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  escrow       NestEscrow @relation(fields: [escrowId], references: [id], onDelete: Cascade)
+  uploadedBy   User       @relation("NestEvidence", fields: [uploadedById], references: [id])
+
   @@map("nest_evidence")
 }
 
 model NestDeadline {
-  id              String   @id @default(cuid())
-  escrowId        String
-  escrow          NestEscrow @relation(fields: [escrowId], references: [id], onDelete: Cascade)
-  
-  type            String   // CLAIM_WINDOW, RESPONSE_DEADLINE, AUTO_RELEASE, SETTLEMENT_ROUND
-  description     String   // Human readable description
-  
-  deadline        DateTime // When the deadline expires
-  status          String   @default("ACTIVE") // ACTIVE, EXPIRED, COMPLETED, CANCELLED
-  
-  // Auto-action configuration
-  autoAction      String?  // What happens when deadline expires
-  autoActionData  String?  // JSON with action parameters
-  
-  // Notification settings (JSON format for SQLite compatibility)
-  notifyDaysBefore String @default("[7,3,1]") // JSON array: Days before to send notifications
-  notificationsSent String @default("[]") // JSON array of sent notification timestamps
-  
-  createdAt       DateTime @default(now())
-  triggeredAt     DateTime? // When auto-action was executed
-  
+  id                String     @id @default(cuid())
+  escrowId          String
+  type              String
+  description       String
+  deadline          DateTime
+  status            String     @default("ACTIVE")
+  autoAction        String?
+  autoActionData    String?
+  notifyDaysBefore  String     @default("[7,3,1]")
+  notificationsSent String     @default("[]")
+  createdAt         DateTime   @default(now())
+  triggeredAt       DateTime?
+  escrow            NestEscrow @relation(fields: [escrowId], references: [id], onDelete: Cascade)
+
   @@map("nest_deadlines")
 }
 
-// Tenant documents model
 model TenantDocument {
-  id              String   @id @default(cuid())
-  userId          String
-  user            User     @relation("UserDocuments", fields: [userId], references: [id], onDelete: Cascade)
-  
-  type            String   // ID_CARD, PASSPORT, PAYSLIP, EMPLOYMENT_LETTER, BANK_STATEMENT, TAX_RETURN, PREVIOUS_RENTAL_REFERENCE
-  title           String   // User-friendly title
-  description     String?  // Optional description
-  
-  fileName        String   // Original file name
-  filePath        String   // Storage path
-  fileSize        Int      // File size in bytes
-  mimeType        String   // MIME type
-  fileHash        String   // File hash for integrity
-  
-  verified        Boolean  @default(false) // Whether document has been verified
-  verifiedBy      String?  // Who verified it (landlord ID or system)
-  verifiedAt      DateTime? // When it was verified
-  
-  expiresAt       DateTime? // For documents with expiration dates
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  id          String    @id @default(cuid())
+  userId      String
+  type        String
+  title       String
+  description String?
+  fileName    String
+  filePath    String
+  fileSize    Int
+  mimeType    String
+  fileHash    String
+  verified    Boolean   @default(false)
+  verifiedBy  String?
+  verifiedAt  DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation("UserDocuments", fields: [userId], references: [id], onDelete: Cascade)
+
   @@map("tenant_documents")
 }
 
-// Landlord invitations from tenants
 model LandlordInvitation {
-  id              String   @id @default(cuid())
-  token           String   @unique @default(cuid())
-  
-  // Who sent the invitation
+  id              String      @id @default(cuid())
+  token           String      @unique @default(cuid())
   tenantId        String
-  tenant          User     @relation("SentLandlordInvitations", fields: [tenantId], references: [id])
-  
-  // Who receives it
   landlordEmail   String
   landlordName    String?
-  landlordId      String?  // Set when landlord accepts
-  landlord        User?    @relation("ReceivedLandlordInvitations", fields: [landlordId], references: [id])
-  
-  // Invitation content
-  subject         String   // Personal message subject
-  message         String?  // Personal message from tenant
-  propertyAddress String   // Property address for context
-  
-  // Status tracking
-  status          String   @default("PENDING") // PENDING, VIEWED, ACCEPTED, REJECTED, EXPIRED
+  landlordId      String?
+  subject         String
+  message         String?
+  propertyAddress String
+  status          String      @default("PENDING")
   viewedAt        DateTime?
   respondedAt     DateTime?
-  
-  // Associated Nest proposal
   nestEscrowId    String?
+  expiresAt       DateTime
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  landlord        User?       @relation("ReceivedLandlordInvitations", fields: [landlordId], references: [id])
   nestEscrow      NestEscrow? @relation("NestInvitations", fields: [nestEscrowId], references: [id])
-  
-  expiresAt       DateTime // Expires after 14 days
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  tenant          User        @relation("SentLandlordInvitations", fields: [tenantId], references: [id])
+
   @@map("landlord_invitations")
 }
 
-// Update User model to include new relations
+model TenantInvitation {
+  id              String     @id @default(cuid())
+  token           String     @unique @default(cuid())
+  landlordId      String
+  tenantEmail     String
+  tenantName      String?
+  tenantId        String?
+  propertyAddress String
+  message         String?
+  nestEscrowId    String?    // Made optional to support different invitation types
+  contractId      String?    // Added for lease contract invitations
+  invitationType  String     @default("TENANT")  // TENANT, LANDLORD, CONTRACT
+  invitationData  String?    // JSON data for flexible invitation content
+  depositAmount   Int
+  rentAmount      Int        @default(0)
+  prepaidAmount   Int        @default(0)
+  utilitiesAmount Int        @default(0)  // Added utilities amount
+  totalAmount     Int
+  status          String     @default("PENDING")
+  viewedAt        DateTime?
+  acceptedAt      DateTime?
+  respondedAt     DateTime?
+  expiresAt       DateTime
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  landlord        User       @relation("SentTenantInvitations", fields: [landlordId], references: [id])
+  nestEscrow      NestEscrow? @relation("TenantInvitations", fields: [nestEscrowId], references: [id], onDelete: Cascade)
+  tenant          User?      @relation("ReceivedTenantInvitations", fields: [tenantId], references: [id])
+
+  @@map("tenant_invitations")
+}
+
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  firstName String
-  lastName  String
-  phone     String?
-  role      String   @default("USER") // USER, LANDLORD, TENANT, ADMIN
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Extended tenant profile fields
-  cprNumber           String?    // CPR number for verification
-  dateOfBirth         DateTime?  // Birth date
-  nationality         String?    // Nationality
-  currentAddress      String?    // Current address
-  previousAddresses   String?    // JSON array of previous addresses
-  
-  // Employment and income
-  monthlyIncome       Int?       // Monthly income in øre
-  employer            String?    // Current employer
-  employmentType      String?    // FULL_TIME, PART_TIME, FREELANCE, UNEMPLOYED, STUDENT, PENSIONER
-  employmentStartDate DateTime?  // Start date at current job
-  
-  // References and guarantees
-  previousLandlords   String?    // JSON array of previous landlord contacts
-  personalReferences  String?    // JSON array of personal references
-  hasGuarantor        Boolean    @default(false)
-  guarantorInfo       String?    // JSON with guarantor information
-  
-  // Household information
-  householdSize       Int?       // Number of people in household
-  hasPets             Boolean    @default(false)
-  petInfo             String?    // JSON with pet details
-  isSmoker            Boolean    @default(false)
-  
-  // Profile verification status
-  emailVerified       Boolean    @default(false)
-  phoneVerified       Boolean    @default(false)
-  identityVerified    Boolean    @default(false)
-  incomeVerified      Boolean    @default(false)
-  creditChecked       Boolean    @default(false)
-  creditScore         Int?       // Credit score if available
-  
-  // MitID verification fields
-  mitIdVerified       Boolean    @default(false)
-  mitIdData           String?    // JSON data from MitID verification
-  
-  // Profile visibility and preferences
-  profilePublic       Boolean    @default(false)
-  allowContactFromLandlords Boolean @default(true)
-  profileCompleteness Int        @default(0) // Percentage 0-100
-  
-  // Metadata
-  lastLoginAt         DateTime?
-  profileUpdatedAt    DateTime?
-
-  buyerEscrows  Escrow[] @relation("BuyerEscrows")
-  sellerEscrows Escrow[] @relation("SellerEscrows")
-  escrows       Escrow[] @relation("UserEscrows")
-  properties    Property[]
-  sentInvitations     Invitation[] @relation("InvitationSender")
-  receivedInvitations Invitation[] @relation("InvitationReceiver")
-  draftContracts      DraftContract[]
-  savedContracts      SavedContract[]
-  
-  // Nest Escrow relations
-  createdNests           NestEscrow[] @relation("LandlordNestEscrows")
-  assignedNests          NestEscrow[] @relation("TenantNestEscrows")
-  initiatedTransactions NestTransaction[] @relation("InitiatedTransactions")
-  nestApprovals         NestApproval[] @relation("NestApprovals")
-  initiatedDisputes     NestDispute[] @relation("InitiatedDisputes")
-  performedActions      NestAuditLog[] @relation("PerformedActions")
-  
-  // New spec relations
-  claims                NestClaim[] @relation("NestClaims")
-  claimResponses        NestClaimResponse[] @relation("NestClaimResponses")
-  uploadedEvidence      NestEvidence[] @relation("NestEvidence")
-  
-  // Tenant-specific relations
-  documents             TenantDocument[] @relation("UserDocuments")
-  sentLandlordInvitations LandlordInvitation[] @relation("SentLandlordInvitations")
+  id                          String               @id @default(cuid())
+  email                       String               @unique
+  password                    String
+  firstName                   String
+  lastName                    String
+  phone                       String?
+  role                        String               @default("USER")
+  createdAt                   DateTime             @default(now())
+  updatedAt                   DateTime             @updatedAt
+  cprNumber                   String?
+  dateOfBirth                 DateTime?
+  nationality                 String?
+  currentAddress              String?
+  previousAddresses           String?
+  monthlyIncome               Int?
+  employer                    String?
+  employmentType              String?
+  employmentStartDate         DateTime?
+  previousLandlords           String?
+  personalReferences          String?
+  hasGuarantor                Boolean              @default(false)
+  guarantorInfo               String?
+  householdSize               Int?
+  hasPets                     Boolean              @default(false)
+  petInfo                     String?
+  isSmoker                    Boolean              @default(false)
+  emailVerified               Boolean              @default(false)
+  phoneVerified               Boolean              @default(false)
+  identityVerified            Boolean              @default(false)
+  incomeVerified              Boolean              @default(false)
+  creditChecked               Boolean              @default(false)
+  creditScore                 Int?
+  mitIdVerified               Boolean              @default(false)
+  mitIdData                   String?
+  profilePublic               Boolean              @default(false)
+  allowContactFromLandlords   Boolean              @default(true)
+  profileCompleteness         Int                  @default(0)
+  emailVerificationToken      String?
+  emailVerificationExpiry     DateTime?
+  passwordResetToken          String?
+  passwordResetExpiry         DateTime?
+  lastLoginAt                 DateTime?
+  profileUpdatedAt            DateTime?
+  twoFactorEnabled            Boolean              @default(false)
+  twoFactorSecret             String?
+  twoFactorBackupCodes        String?
+  twoFactorVerifiedAt         DateTime?
+  draftContracts              DraftContract[]
+  buyerEscrows                Escrow[]             @relation("BuyerEscrows")
+  sellerEscrows               Escrow[]             @relation("SellerEscrows")
+  escrows                     Escrow[]             @relation("UserEscrows")
+  receivedInvitations         Invitation[]         @relation("InvitationReceiver")
+  sentInvitations             Invitation[]         @relation("InvitationSender")
   receivedLandlordInvitations LandlordInvitation[] @relation("ReceivedLandlordInvitations")
+  sentLandlordInvitations     LandlordInvitation[] @relation("SentLandlordInvitations")
+  nestApprovals               NestApproval[]       @relation("NestApprovals")
+  performedActions            NestAuditLog[]       @relation("PerformedActions")
+  claimResponses              NestClaimResponse[]  @relation("NestClaimResponses")
+  claims                      NestClaim[]          @relation("NestClaims")
+  initiatedDisputes           NestDispute[]        @relation("InitiatedDisputes")
+  createdNests                NestEscrow[]         @relation("LandlordNestEscrows")
+  assignedNests               NestEscrow[]         @relation("TenantNestEscrows")
+  uploadedEvidence            NestEvidence[]       @relation("NestEvidence")
+  initiatedTransactions       NestTransaction[]    @relation("InitiatedTransactions")
+  properties                  Property[]
+  savedContracts              SavedContract[]
+  documents                   TenantDocument[]     @relation("UserDocuments")
+  sentTenantInvitations       TenantInvitation[]   @relation("SentTenantInvitations")
+  receivedTenantInvitations   TenantInvitation[]   @relation("ReceivedTenantInvitations")
 
   @@map("users")
 }
 
-// FAQ Model
 model FAQ {
-  id          String   @id @default(cuid())
-  question    String
-  answer      String   // Can contain HTML/markdown
-  category    String?  // Optional category for grouping
-  order       Int      @default(0) // For custom ordering
-  published   Boolean  @default(true)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  id        String   @id @default(cuid())
+  question  String
+  answer    String
+  category  String?
+  order     Int      @default(0)
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@map("faqs")
 }

@@ -121,7 +121,17 @@ const nestEscrowRoutes: FastifyPluginAsync = async (fastify) => {
         }
       })
 
-      reply.send(escrow)
+      // Map database field names to frontend expected field names
+      const mappedEscrow = {
+        ...escrow,
+        depositAmount: escrow.deposit || escrow.depositAmount,
+        firstMonthAmount: escrow.rent || escrow.firstMonthAmount,
+        prepaidAmount: escrow.prepaidRent || escrow.prepaidAmount,
+        utilitiesAmount: escrow.utilitiesAmount || 0,
+        propertyAddress: escrow.address || escrow.propertyAddress
+      }
+
+      reply.send(mappedEscrow)
     } catch (error) {
       console.error('Error creating nest escrow:', error)
       reply.status(500).send({ error: 'Failed to create nest escrow' })
@@ -183,12 +193,12 @@ const nestEscrowRoutes: FastifyPluginAsync = async (fastify) => {
           type: 'DEPOSIT',
           status: 'DRAFT', // Start in DRAFT state
           version: 1,
-          depositAmount: data.depositAmount,
-          firstMonthAmount: data.firstMonthAmount,
-          prepaidAmount: data.prepaidAmount,
+          deposit: data.depositAmount,
+          rent: data.firstMonthAmount,
+          prepaidRent: data.prepaidAmount,
           utilitiesAmount: data.utilitiesAmount,
           totalAmount,
-          propertyAddress: data.propertyAddress,
+          address: data.propertyAddress,
           propertyPostcode: data.propertyPostcode,
           propertyCity: data.propertyCity,
           propertyType: data.propertyType,
@@ -298,6 +308,40 @@ const nestEscrowRoutes: FastifyPluginAsync = async (fastify) => {
         })
       }
 
+      // Update status to AGREED since tenant invitation is being sent
+      const updatedEscrow = await fastify.prisma.nestEscrow.update({
+        where: { id: escrow.id },
+        data: { 
+          status: 'AGREED',
+          agreedAt: new Date()
+        },
+        include: {
+          landlord: {
+            select: { id: true, firstName: true, lastName: true, email: true }
+          },
+          tenant: {
+            select: { id: true, firstName: true, lastName: true, email: true }
+          }
+        }
+      })
+
+      // Create tenant invitation
+      const invitation = await fastify.prisma.tenantInvitation.create({
+        data: {
+          landlordId: userId,
+          tenantEmail: data.tenantEmail,
+          tenantName: data.tenantName,
+          tenantId: tenantId,
+          nestEscrowId: updatedEscrow.id,
+          propertyAddress: data.propertyAddress,
+          depositAmount: data.depositAmount,
+          rentAmount: data.firstMonthAmount,
+          prepaidAmount: data.prepaidAmount,
+          totalAmount,
+          expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) // 14 days
+        }
+      })
+
       // Create audit log
       await fastify.prisma.nestAuditLog.create({
         data: {
@@ -309,13 +353,40 @@ const nestEscrowRoutes: FastifyPluginAsync = async (fastify) => {
             method: 'simple',
             totalAmount, 
             propertyAddress: data.propertyAddress,
-            tenantEmail: data.tenantEmail 
+            tenantEmail: data.tenantEmail,
+            invitationId: invitation.id
           }),
           ipAddress: request.ip
         }
       })
 
-      reply.send(escrow)
+      // Create second audit log for status change
+      await fastify.prisma.nestAuditLog.create({
+        data: {
+          escrowId: escrow.id,
+          action: 'STATUS_CHANGED',
+          performedById: userId,
+          performedByRole: 'LANDLORD',
+          details: JSON.stringify({ 
+            oldStatus: 'DRAFT',
+            newStatus: 'AGREED',
+            reason: 'Tenant invitation sent'
+          }),
+          ipAddress: request.ip
+        }
+      })
+
+      // Map database field names to frontend expected field names
+      const mappedEscrow = {
+        ...updatedEscrow,
+        depositAmount: updatedEscrow.deposit,
+        firstMonthAmount: updatedEscrow.rent,
+        prepaidAmount: updatedEscrow.prepaidRent,
+        utilitiesAmount: updatedEscrow.utilitiesAmount,
+        propertyAddress: updatedEscrow.address
+      }
+
+      reply.send(mappedEscrow)
     } catch (error) {
       console.error('Error creating simple nest escrow:', error)
       reply.status(500).send({ error: 'Failed to create nest escrow' })
@@ -526,7 +597,17 @@ const nestEscrowRoutes: FastifyPluginAsync = async (fastify) => {
         orderBy: { createdAt: 'desc' }
       })
 
-      reply.send({ escrows })
+      // Map database field names to frontend expected field names for all escrows
+      const mappedEscrows = escrows.map(escrow => ({
+        ...escrow,
+        depositAmount: escrow.deposit,
+        firstMonthAmount: escrow.rent,
+        prepaidAmount: escrow.prepaidRent,
+        utilitiesAmount: escrow.utilitiesAmount,
+        propertyAddress: escrow.address
+      }))
+
+      reply.send({ escrows: mappedEscrows })
     } catch (error) {
       console.error('Error fetching nest escrows:', error)
       reply.status(500).send({ error: 'Failed to fetch nest escrows' })
@@ -613,7 +694,17 @@ const nestEscrowRoutes: FastifyPluginAsync = async (fastify) => {
         return reply.status(404).send({ error: 'Nest escrow not found' })
       }
 
-      reply.send(escrow)
+      // Map database field names to frontend expected field names
+      const mappedEscrow = {
+        ...escrow,
+        depositAmount: escrow.deposit,
+        firstMonthAmount: escrow.rent,
+        prepaidAmount: escrow.prepaidRent,
+        utilitiesAmount: escrow.utilitiesAmount,
+        propertyAddress: escrow.address
+      }
+
+      reply.send(mappedEscrow)
     } catch (error) {
       console.error('Error fetching nest escrow details:', error)
       reply.status(500).send({ error: 'Failed to fetch nest escrow details' })
@@ -1665,6 +1756,127 @@ const nestEscrowRoutes: FastifyPluginAsync = async (fastify) => {
     } catch (error) {
       console.error('Error generating statement:', error)
       reply.status(500).send({ error: 'Failed to generate statement' })
+    }
+  })
+
+  // Create dummy funded escrow for testing
+  fastify.post('/nest/escrows/create-funded-dummy', async (request, reply) => {
+    try {
+      const userId = (request.user as any).id
+      
+      // Get or create a tenant user for demo
+      let tenant = await fastify.prisma.user.findFirst({
+        where: { email: 'tenant@demo.dk' }
+      })
+
+      if (!tenant) {
+        tenant = await fastify.prisma.user.create({
+          data: {
+            email: 'tenant@demo.dk',
+            password: 'hashedpassword',
+            firstName: 'Demo',
+            lastName: 'Lejer',
+            role: 'TENANT'
+          }
+        })
+      }
+
+      const totalAmount = 25000 + 12000 + 0 + 2500 // 39,500 DKK total
+
+      // Create the escrow with FUNDED status
+      const escrow = await fastify.prisma.nestEscrow.create({
+        data: {
+          landlordId: userId,
+          tenantId: tenant.id,
+          type: 'DEPOSIT',
+          status: 'FUNDED', // Start as FUNDED to show deposit received
+          version: 1,
+          deposit: 25000, // 250 DKK
+          rent: 12000,     // 120 DKK  
+          prepaidRent: 0,
+          utilitiesAmount: 2500, // 25 DKK
+          totalAmount,
+          address: 'Københavnsgade 42, 2. th',
+          propertyPostcode: '2200',
+          propertyCity: 'København N',
+          propertyType: 'APARTMENT',
+          startDate: new Date('2024-12-01'),
+          endDate: new Date('2025-12-01'),
+          fundedAt: new Date(), // Mark as funded now
+          claimWindowDays: 14,
+          responseWindowDays: 5,
+          autoReleaseDays: 21,
+          settlementRounds: 2
+        },
+        include: {
+          landlord: {
+            select: { id: true, firstName: true, lastName: true, email: true }
+          },
+          tenant: {
+            select: { id: true, firstName: true, lastName: true, email: true }
+          }
+        }
+      })
+
+      // Create the funding transaction
+      await fastify.prisma.nestTransaction.create({
+        data: {
+          escrowId: escrow.id,
+          type: 'DEPOSIT',
+          amount: escrow.totalAmount,
+          initiatedById: tenant.id,
+          reason: 'Demo escrow funding',
+          status: 'COMPLETED',
+          paymentReference: 'DEMO-PAYMENT-123',
+          executedAt: new Date()
+        }
+      })
+
+      // Create release rules
+      await fastify.prisma.nestReleaseRule.createMany({
+        data: [
+          {
+            escrowId: escrow.id,
+            type: 'AUTOMATIC',
+            triggerType: 'LEASE_END',
+            amount: escrow.deposit,
+            requiresNotification: true,
+            notificationDaysBefore: 7,
+            allowObjection: true,
+            objectionPeriodDays: 14
+          },
+          {
+            escrowId: escrow.id,
+            type: 'AUTOMATIC', 
+            triggerType: 'START_DATE',
+            amount: escrow.rent,
+            triggerDate: escrow.startDate,
+            requiresNotification: false,
+            allowObjection: false
+          }
+        ]
+      })
+
+      // Audit log
+      await fastify.prisma.nestAuditLog.create({
+        data: {
+          escrowId: escrow.id,
+          action: 'DUMMY_CREATED_FUNDED',
+          performedById: userId,
+          performedByRole: 'LANDLORD',
+          details: JSON.stringify({ demoData: true, totalAmount }),
+          ipAddress: request.ip
+        }
+      })
+
+      reply.send({ 
+        escrow,
+        message: 'Dummy funded escrow created successfully',
+        url: `/nest/escrows/${escrow.id}`
+      })
+    } catch (error) {
+      console.error('Error creating dummy funded escrow:', error)
+      reply.status(500).send({ error: 'Failed to create dummy funded escrow' })
     }
   })
 }

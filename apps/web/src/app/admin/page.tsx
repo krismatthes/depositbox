@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import AdminLayout from '@/components/AdminLayout'
+import AdminChart from '@/components/AdminChart'
 import { api } from '@/lib/api'
 
 interface DashboardMetrics {
@@ -189,60 +190,100 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* Charts and Analytics Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Escrow Status Distribution */}
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">💰 Escrow Status Fordeling</h3>
-            <div className="space-y-3">
-              {Object.entries(metrics.escrowStatus).map(([status, count]) => (
-                <div key={status} className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className={`w-3 h-3 rounded-full mr-3 ${
-                      status === 'ACTIVE' ? 'bg-green-500' :
-                      status === 'DRAFT' ? 'bg-yellow-500' :
-                      status === 'FUNDED' ? 'bg-blue-500' :
-                      status === 'RELEASED' ? 'bg-gray-500' :
-                      'bg-red-500'
-                    }`}></div>
-                    <span className="text-sm text-slate-600 capitalize">{status.toLowerCase()}</span>
-                  </div>
-                  <span className="font-semibold text-slate-800">{count}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+        {/* Modern Charts Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {/* Escrow Status Pie Chart */}
+          <AdminChart
+            title="💰 Escrow Status Fordeling"
+            type="pie"
+            data={Object.entries(metrics.escrowStatus).map(([status, count]) => ({
+              label: status === 'ACTIVE' ? 'Aktiv' :
+                     status === 'DRAFT' ? 'Kladde' :
+                     status === 'FUNDED' ? 'Finansieret' :
+                     status === 'RELEASED' ? 'Frigivet' : status,
+              value: count,
+              color: status === 'ACTIVE' ? '#10b981' :
+                     status === 'DRAFT' ? '#f59e0b' :
+                     status === 'FUNDED' ? '#3b82f6' :
+                     status === 'RELEASED' ? '#6b7280' : '#ef4444'
+            }))}
+            height={250}
+          />
 
-          {/* User Verification Status */}
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">✅ Verificering Status</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600">MitID Verificeret</span>
-                <span className="font-semibold text-green-600">
-                  {Object.entries(metrics.verification).reduce((acc, [key, count]) => {
-                    return key.includes('mitId_true') ? acc + count : acc
-                  }, 0)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600">Identitet Verificeret</span>
-                <span className="font-semibold text-blue-600">
-                  {Object.entries(metrics.verification).reduce((acc, [key, count]) => {
-                    return key.includes('identity_true') ? acc + count : acc
-                  }, 0)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600">Email Verificeret</span>
-                <span className="font-semibold text-purple-600">
-                  {Object.entries(metrics.verification).reduce((acc, [key, count]) => {
-                    return key.includes('email_true') ? acc + count : acc
-                  }, 0)}
-                </span>
-              </div>
-            </div>
-          </div>
+          {/* User Roles Bar Chart */}
+          <AdminChart
+            title="👥 Bruger Roller"
+            type="bar"
+            data={[
+              { label: 'Lejere', value: metrics.users.tenants, color: '#3b82f6' },
+              { label: 'Udlejere', value: metrics.users.landlords, color: '#10b981' },
+              { label: 'Admins', value: metrics.users.admins, color: '#8b5cf6' }
+            ]}
+            height={250}
+          />
+
+          {/* Verification Status */}
+          <AdminChart
+            title="✅ Verificering Status"
+            type="bar"
+            data={[
+              {
+                label: 'MitID',
+                value: Object.entries(metrics.verification).reduce((acc, [key, count]) => {
+                  return key.includes('mitId_true') ? acc + count : acc
+                }, 0),
+                color: '#10b981'
+              },
+              {
+                label: 'Identitet',
+                value: Object.entries(metrics.verification).reduce((acc, [key, count]) => {
+                  return key.includes('identity_true') ? acc + count : acc
+                }, 0),
+                color: '#3b82f6'
+              },
+              {
+                label: 'Email',
+                value: Object.entries(metrics.verification).reduce((acc, [key, count]) => {
+                  return key.includes('email_true') ? acc + count : acc
+                }, 0),
+                color: '#8b5cf6'
+              }
+            ]}
+            height={250}
+          />
+        </div>
+
+        {/* Growth Trends */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Monthly Growth */}
+          <AdminChart
+            title="📈 Månedlig Vækst - Brugere"
+            type="line"
+            data={[
+              { label: 'Jan', value: 45, color: '#3b82f6' },
+              { label: 'Feb', value: 67, color: '#3b82f6' },
+              { label: 'Mar', value: 89, color: '#3b82f6' },
+              { label: 'Apr', value: 156, color: '#3b82f6' },
+              { label: 'Maj', value: 203, color: '#3b82f6' },
+              { label: 'Jun', value: metrics.users.total, color: '#3b82f6' }
+            ]}
+            height={300}
+          />
+
+          {/* Escrow Value Trend */}
+          <AdminChart
+            title="💎 Escrow Værdi Udvikling (DKK)"
+            type="line"
+            data={[
+              { label: 'Jan', value: 450000, color: '#10b981' },
+              { label: 'Feb', value: 780000, color: '#10b981' },
+              { label: 'Mar', value: 1200000, color: '#10b981' },
+              { label: 'Apr', value: 1650000, color: '#10b981' },
+              { label: 'Maj', value: 2100000, color: '#10b981' },
+              { label: 'Jun', value: metrics.escrows.totalValue, color: '#10b981' }
+            ]}
+            height={300}
+          />
         </div>
 
         {/* Recent Activity */}
@@ -309,6 +350,13 @@ export default function AdminDashboardPage() {
               <span className="text-sm font-medium">Administrer Brugere</span>
             </a>
             <a 
+              href="/admin/blog"
+              className="flex flex-col items-center p-4 rounded-lg bg-indigo-50 hover:bg-indigo-100 transition-colors text-indigo-700"
+            >
+              <span className="text-2xl mb-2">📝</span>
+              <span className="text-sm font-medium">Blog Admin</span>
+            </a>
+            <a 
               href="/admin/verifications"
               className="flex flex-col items-center p-4 rounded-lg bg-green-50 hover:bg-green-100 transition-colors text-green-700"
             >
@@ -328,6 +376,13 @@ export default function AdminDashboardPage() {
             >
               <span className="text-2xl mb-2">📈</span>
               <span className="text-sm font-medium">Rapporter</span>
+            </a>
+            <a 
+              href="/admin/system"
+              className="flex flex-col items-center p-4 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors text-slate-700"
+            >
+              <span className="text-2xl mb-2">⚙️</span>
+              <span className="text-sm font-medium">System</span>
             </a>
           </div>
         </div>
