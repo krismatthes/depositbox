@@ -1,0 +1,212 @@
+/* Blog-specific styles */
+
+/* Line clamp utility for truncating text */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Blog article content styles */
+.blog-content {
+  font-size: 1.125rem;
+  line-height: 1.7;
+  color: #374151;
+}
+
+.blog-content h1,
+.blog-content h2,
+.blog-content h3,
+.blog-content h4,
+.blog-content h5,
+.blog-content h6 {
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.blog-content h1 {
+  font-size: 2.5rem;
+  line-height: 1.2;
+}
+
+.blog-content h2 {
+  font-size: 2rem;
+  line-height: 1.3;
+}
+
+.blog-content h3 {
+  font-size: 1.5rem;
+  line-height: 1.4;
+}
+
+.blog-content p {
+  margin-bottom: 1.5rem;
+}
+
+.blog-content ul,
+.blog-content ol {
+  margin-bottom: 1.5rem;
+  padding-left: 1.5rem;
+}
+
+.blog-content li {
+  margin-bottom: 0.5rem;
+}
+
+.blog-content blockquote {
+  margin: 2rem 0;
+  padding: 1rem 1.5rem;
+  border-left: 4px solid #3b82f6;
+  background-color: #f8fafc;
+  font-style: italic;
+}
+
+.blog-content code {
+  background-color: #f1f5f9;
+  color: #e11d48;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+}
+
+.blog-content pre {
+  background-color: #1e293b;
+  color: #f8fafc;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 1.5rem 0;
+}
+
+.blog-content pre code {
+  background-color: transparent;
+  color: inherit;
+  padding: 0;
+}
+
+.blog-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 2rem 0;
+}
+
+.blog-content a {
+  color: #3b82f6;
+  text-decoration: underline;
+}
+
+.blog-content a:hover {
+  color: #1d4ed8;
+}
+
+/* Featured post gradient overlay */
+.featured-post-overlay {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+}
+
+/* Category color classes */
+.category-tips { background-color: #3b82f6; }
+.category-guides { background-color: #10b981; }
+.category-news { background-color: #ef4444; }
+.category-legal { background-color: #8b5cf6; }
+.category-tech { background-color: #f97316; }
+
+/* Smooth hover animations */
+.blog-card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.blog-card-hover:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* Reading progress bar (can be added later) */
+.reading-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0%;
+  height: 3px;
+  background: linear-gradient(to right, #3b82f6, #8b5cf6);
+  z-index: 9999;
+  transition: width 0.1s ease-out;
+}
+
+/* Social share button animations */
+.social-share-btn {
+  transition: all 0.2s ease-in-out;
+}
+
+.social-share-btn:hover {
+  transform: scale(1.05);
+}
+
+/* Newsletter signup form */
+.newsletter-form {
+  max-width: 400px;
+}
+
+.newsletter-input {
+  border: 2px solid transparent;
+  transition: all 0.2s ease-in-out;
+}
+
+.newsletter-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Admin interface enhancements */
+.admin-table-row {
+  transition: background-color 0.15s ease-in-out;
+}
+
+.admin-table-row:hover {
+  background-color: #f8fafc;
+}
+
+.admin-action-btn {
+  transition: all 0.15s ease-in-out;
+}
+
+.admin-action-btn:hover {
+  transform: scale(1.1);
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .blog-content {
+    font-size: 1rem;
+  }
+  
+  .blog-content h1 {
+    font-size: 2rem;
+  }
+  
+  .blog-content h2 {
+    font-size: 1.75rem;
+  }
+  
+  .blog-content h3 {
+    font-size: 1.25rem;
+  }
+}

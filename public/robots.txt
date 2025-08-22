@@ -1,0 +1,16 @@
+User-agent: *
+Allow: /
+
+# Blog content
+Allow: /blog
+Allow: /blog/*
+
+# Sitemap
+Sitemap: https://depositums-box.netlify.app/sitemap.xml
+
+# Disallow admin areas
+Disallow: /admin
+Disallow: /api
+Disallow: /dashboard
+Disallow: /_next
+Disallow: /static

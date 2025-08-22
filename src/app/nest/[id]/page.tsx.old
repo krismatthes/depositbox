@@ -1,0 +1,850 @@
+'use client'
+
+import { useAuth } from '@/lib/auth-context'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import Navigation from '@/components/Navigation'
+import StatusTimeline from '@/components/StatusTimeline'
+import DigitalSignature from '@/components/DigitalSignature'
+import Link from 'next/link'
+
+const formatCurrency = (amount: number | string) => {
+  const numAmount = typeof amount === 'string' ? parseInt(amount) : amount
+  return (numAmount / 100).toLocaleString('da-DK')
+}
+
+const formatDate = (dateString?: string) => {
+  if (!dateString) return 'Ikke angivet'
+  return new Date(dateString).toLocaleDateString('da-DK', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+}
+
+const formatDateTime = (dateString?: string) => {
+  if (!dateString) return 'Ikke angivet'
+  return new Date(dateString).toLocaleString('da-DK', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const getReleaseTypeLabel = (type: string) => {
+  switch (type) {
+    case 'LEASE_END':
+      return 'Ved lejemålets ophør'
+    case 'START_DATE':
+      return 'Ved indflytningsdato'
+    case 'CUSTOM_DATE':
+      return 'På specifik dato'
+    default:
+      return type
+  }
+}
+
+const getTimelineSteps = () => {
+  return [
+    {
+      key: 'DRAFT',
+      label: 'Oprettet',
+      description: 'Nest er oprettet af udlejer',
+      icon: '📝'
+    },
+    {
+      key: 'AGREED',
+      label: 'Sendt til lejer',
+      description: 'Invitation sendt til lejer',
+      icon: '📧'
+    },
+    {
+      key: 'FUNDED',
+      label: 'Accepteret',
+      description: 'Lejer har accepteret og betalt',
+      icon: '💰'
+    },
+    {
+      key: 'ACTIVE',
+      label: 'Aktiv',
+      description: 'Lejer er flyttet ind',
+      icon: '🏠'
+    },
+    {
+      key: 'RELEASED',
+      label: 'Frigivet',
+      description: 'Depositum er frigivet',
+      icon: '✅'
+    }
+  ]
+}
+
+// Generate lease contract content
+const generateLeaseContract = (escrow: any, user: any) => {
+  return `
+LEJEKONTRAKT
+
+Mellem følgende parter:
+
+UDLEJER:
+Anna Hansen
+Email: anna.hansen@email.com
+Telefon: +45 20 30 40 50
+Adresse: Landlord Address 123, 2100 København Ø
+CVR-nr: 12345678
+
+LEJER:
+${user.firstName} ${user.lastName}
+Email: ${user.email}
+Adresse: Lejer Address 456, 2000 Frederiksberg
+CPR-nr: [Udfyldes]
+
+LEJEMÅLET:
+Adresse: ${escrow.address || 'Toftekrogen 21, 2620 Albertslund'}
+Størrelse: 75 m²
+Værelser: 3 værelser
+Faciliteter: Balkon, Opvaskemaskine, Vaskemaskine, Parkeringsplads
+
+LEJEPERIODE:
+Fra: 1. september 2025
+Til: 31. august 2026
+Lejemålet er tidsbegrænset.
+
+ØKONOMI:
+Månedlig leje: ${formatCurrency(12000)} DKK
+Depositum: ${formatCurrency(15000)} DKK
+Forudbetalt leje: ${formatCurrency(12000)} DKK (1. måned)
+A conto varme: Inkluderet i leje
+
+SÆRLIGE VILKÅR:
+1. Lejeren har ret til at benytte balkon og parkeringsplads
+2. Kæledyr er ikke tilladt uden skriftlig tilladelse
+3. Rygning er ikke tilladt i lejemålet
+4. Depositum og leje er deponeret sikkert gennem BoligDeposit
+5. Depositum frigives automatisk ved fraflytning hvis alt er i orden
+
+DEPOSITUM OG SIKKERHED:
+• Depositum og forudbetalte beløb holdes sikkert i deponering gennem BoligDeposit
+• Beløb frigives automatisk i henhold til aftalte betingelser
+• Tvist håndtering foregår gennem BoligDeposit systemet
+• Maksimum 14 dages behandlingstid for tvister
+
+VEDLIGEHOLDELSE:
+Lejer er ansvarlig for indvendig vedligeholdelse og rengøring.
+Udlejer er ansvarlig for udvendig vedligeholdelse og større reparationer.
+
+OPSIGELSE:
+Lejemålet kan opsiges med 3 måneders varsel til den 1. i en måned.
+Da lejemålet er tidsbegrænset, ophører det automatisk 31. august 2026.
+
+DIGITAL DEPONERING:
+Denne lejekontrakt er integreret med BoligDeposit digital deponeringsservice.
+Alle økonomiske transaktioner håndteres gennem systemet for maksimal sikkerhed.
+
+Ved underskrift af denne kontrakt accepterer begge parter ovenstående vilkår.
+
+Dato: ${new Date().toLocaleDateString('da-DK')}
+
+Underskrifter:
+Udlejer: Anna Hansen ✓ (Underskrevet digitalt)
+Lejer: ${user.firstName} ${user.lastName} - Afventer underskrift
+`
+}
+
+export default function NestDetailsPage({ params }: { params: { id: string } }) {
+  const { user, loading } = useAuth()
+  const router = useRouter()
+  const [escrow, setEscrow] = useState<any>(null)
+  const [loadingData, setLoadingData] = useState(true)
+  const [showSignature, setShowSignature] = useState(false)
+  const [contractSigned, setContractSigned] = useState(false)
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login')
+    }
+  }, [user, loading, router])
+
+  useEffect(() => {
+    if (user && params.id) {
+      loadEscrowData()
+    }
+  }, [user, params.id])
+
+  const loadEscrowData = () => {
+    // Load from localStorage since we're using dummy data
+    if (typeof window !== 'undefined' && user) {
+      const persistedEscrows = localStorage.getItem(`escrows_${user.id}`)
+      console.log('NEST Details: Loading escrow data', {
+        userId: user.id,
+        requestedId: params.id,
+        storageKey: `escrows_${user.id}`,
+        hasStoredData: !!persistedEscrows
+      })
+      
+      if (persistedEscrows) {
+        try {
+          const escrows = JSON.parse(persistedEscrows)
+          console.log('NEST Details: Parsed escrows', {
+            escrowCount: escrows.length,
+            availableIds: escrows.map((e: any) => e.id),
+            requestedId: params.id,
+            escrows: escrows
+          })
+          const foundEscrow = escrows.find((e: any) => e.id === params.id)
+          
+          if (foundEscrow) {
+            // Enrich with additional details for the detailed view
+            const enrichedEscrow = {
+              ...foundEscrow,
+              transactions: [
+                {
+                  id: 'tx-1',
+                  type: 'PAYMENT',
+                  amount: foundEscrow.totalAmount + (foundEscrow.fees?.serviceFee || 1170),
+                  description: 'Betaling modtaget via PayProff',
+                  status: 'COMPLETED',
+                  date: foundEscrow.createdAt,
+                  reference: 'PP-' + foundEscrow.id.slice(-8).toUpperCase()
+                },
+                {
+                  id: 'tx-2',
+                  type: 'DEPOSIT',
+                  amount: foundEscrow.totalAmount,
+                  description: 'Beløb sat i sikker deponering',
+                  status: 'COMPLETED',
+                  date: foundEscrow.createdAt,
+                  reference: 'DEP-' + foundEscrow.id.slice(-8).toUpperCase()
+                }
+              ],
+              contractDetails: {
+                landlordName: 'Anna Hansen',
+                landlordEmail: 'anna.hansen@email.com',
+                landlordPhone: '+45 20 30 40 50',
+                tenantName: `${user.firstName} ${user.lastName}`,
+                tenantEmail: user.email,
+                startDate: '2025-09-01',
+                endDate: '2026-08-31',
+                monthlyRent: 12000,
+                depositAmount: 15000,
+                prepaidRent: 12000,
+                propertyAddress: foundEscrow.address || 'Toftekrogen 21, 2620 Albertslund',
+                propertySize: '75 m²',
+                propertyRooms: '3 værelser',
+                propertyFacilities: ['Balkon', 'Opvaskemaskine', 'Vaskemaskine', 'Parkeringsplads']
+              },
+              releaseConditions: {
+                deposit: {
+                  type: 'LEASE_END',
+                  description: 'Depositum frigives ved fraflytning hvis alt er i orden',
+                  amount: foundEscrow.deposit || 15000,
+                  estimatedDate: '2026-08-31'
+                },
+                firstMonth: {
+                  type: 'START_DATE',
+                  description: '1. måneds leje frigives ved indflytning',
+                  amount: foundEscrow.rent || 12000,
+                  releaseDate: '2025-09-01',
+                  status: foundEscrow.status === 'ACTIVE' ? 'RELEASED' : 'PENDING'
+                },
+                prepaid: {
+                  type: 'START_DATE',
+                  description: 'Forudbetalt leje frigives ved indflytning',
+                  amount: foundEscrow.prepaidRent || 12000,
+                  releaseDate: '2025-09-01',
+                  status: foundEscrow.status === 'ACTIVE' ? 'RELEASED' : 'PENDING'
+                }
+              },
+              fees: {
+                serviceFee: 1170,
+                processingFee: 0,
+                adminFee: 0,
+                total: 1170
+              },
+              leaseContract: {
+                id: 'contract-' + foundEscrow.id,
+                title: 'Lejekontrakt - ' + (foundEscrow.address || 'Toftekrogen 21, 2620 Albertslund'),
+                createdDate: foundEscrow.createdAt,
+                status: contractSigned ? 'SIGNED' : 'PENDING_SIGNATURE',
+                signedDate: contractSigned ? new Date().toISOString() : null,
+                content: generateLeaseContract(foundEscrow, user),
+                parties: {
+                  landlord: {
+                    name: 'Anna Hansen',
+                    email: 'anna.hansen@email.com',
+                    address: 'Landlord Address 123, 2100 København Ø',
+                    signed: true,
+                    signedDate: foundEscrow.createdAt
+                  },
+                  tenant: {
+                    name: `${user.firstName} ${user.lastName}`,
+                    email: user.email,
+                    address: 'Lejer Address 456, 2000 Frederiksberg',
+                    signed: contractSigned,
+                    signedDate: contractSigned ? new Date().toISOString() : null
+                  }
+                }
+              }
+            }
+            
+            console.log('NEST Details: Found escrow', foundEscrow)
+            setEscrow(enrichedEscrow)
+            
+            // Check if contract is already signed (from localStorage)
+            const signedContracts = localStorage.getItem(`signed_contracts_${user.id}`)
+            if (signedContracts) {
+              try {
+                const contracts = JSON.parse(signedContracts)
+                const isSigned = contracts.includes('contract-' + foundEscrow.id)
+                setContractSigned(isSigned)
+              } catch (error) {
+                console.error('Failed to parse signed contracts:', error)
+              }
+            }
+          } else {
+            console.log('NEST Details: Escrow not found', {
+              requestedId: params.id,
+              availableIds: escrows.map((e: any) => e.id)
+            })
+          }
+        } catch (error) {
+          console.error('Failed to parse escrow data:', error)
+        }
+      } else {
+        console.log('NEST Details: No persisted escrows found for user', user.id)
+      }
+    }
+    setLoadingData(false)
+  }
+
+  const handleSignContract = (signatureData: string) => {
+    setContractSigned(true)
+    setShowSignature(false)
+    
+    // Save signature to localStorage
+    if (typeof window !== 'undefined' && user) {
+      const signedContracts = localStorage.getItem(`signed_contracts_${user.id}`)
+      let contracts = []
+      
+      if (signedContracts) {
+        try {
+          contracts = JSON.parse(signedContracts)
+        } catch (error) {
+          console.error('Failed to parse signed contracts:', error)
+        }
+      }
+      
+      if (escrow) {
+        contracts.push('contract-' + escrow.id)
+        localStorage.setItem(`signed_contracts_${user.id}`, JSON.stringify(contracts))
+        
+        // Also save signature data
+        const signatureKey = `signature_${escrow.leaseContract.id}_${user.id}`
+        localStorage.setItem(signatureKey, signatureData)
+      }
+    }
+  }
+
+  if (loading || loadingData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+      </div>
+    )
+  }
+
+  if (!user || !escrow) {
+    return (
+      <>
+        <Navigation />
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-slate-800 mb-4">Nest ikke fundet</h1>
+            <p className="text-slate-600 mb-6">Den ønskede Nest kunne ikke findes.</p>
+            <Link href="/dashboard" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold">
+              Tilbage til Dashboard
+            </Link>
+          </div>
+        </div>
+      </>
+    )
+  }
+
+  return (
+    <>
+      <Navigation />
+      <div className="min-h-screen bg-slate-50">
+        <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+          {/* Header */}
+          <div className="mb-8">
+            <Link 
+              href="/dashboard" 
+              className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium mb-6"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Tilbage til Dashboard
+            </Link>
+            
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-4xl font-bold text-slate-800 mb-2">Nest Detaljer</h1>
+                <p className="text-slate-600">{escrow.contractDetails.propertyAddress}</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className={`px-4 py-2 rounded-full text-sm font-semibold ${
+                  escrow.status === 'ACTIVE' ? 'bg-green-100 text-green-800' :
+                  escrow.status === 'FUNDED' ? 'bg-blue-100 text-blue-800' :
+                  escrow.status === 'RELEASED' ? 'bg-purple-100 text-purple-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {escrow.status === 'ACTIVE' ? 'Aktiv' :
+                   escrow.status === 'FUNDED' ? 'Finansieret' :
+                   escrow.status === 'RELEASED' ? 'Frigivet' :
+                   escrow.status}
+                </span>
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-slate-800">{formatCurrency(escrow.totalAmount)} DKK</div>
+                  <div className="text-sm text-slate-500">Total deponering</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Main Content */}
+            <div className="lg:col-span-2 space-y-8">
+              {/* Status Timeline */}
+              <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
+                <h2 className="text-xl font-bold text-slate-800 mb-6">Status Fremskridt</h2>
+                <StatusTimeline 
+                  currentStatus={escrow.status}
+                  steps={getTimelineSteps()}
+                />
+              </div>
+
+              {/* Payment Breakdown */}
+              <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
+                <h2 className="text-xl font-bold text-slate-800 mb-6">Betalingsopdeling</h2>
+                <div className="space-y-4">
+                  {escrow.deposit > 0 && (
+                    <div className="flex justify-between items-center p-4 bg-blue-50 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
+                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                          </svg>
+                        </div>
+                        <div>
+                          <div className="font-semibold text-slate-800">Depositum</div>
+                          <div className="text-sm text-slate-600">Sikkerhedsstillelse</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-blue-800">{formatCurrency(escrow.deposit)} DKK</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {escrow.rent > 0 && (
+                    <div className="flex justify-between items-center p-4 bg-green-50 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
+                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                          </svg>
+                        </div>
+                        <div>
+                          <div className="font-semibold text-slate-800">1. måneds leje</div>
+                          <div className="text-sm text-slate-600">Forudbetalt ved indflytning</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-green-800">{formatCurrency(escrow.rent)} DKK</div>
+                        <div className="text-xs text-green-600">
+                          {escrow.releaseConditions.firstMonth.status === 'RELEASED' ? 'Frigivet' : 'Venter på indflytning'}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {escrow.prepaidRent > 0 && (
+                    <div className="flex justify-between items-center p-4 bg-purple-50 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-purple-500 rounded-xl flex items-center justify-center">
+                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <div className="font-semibold text-slate-800">Forudbetalt leje</div>
+                          <div className="text-sm text-slate-600">Ekstra måneds leje</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-purple-800">{formatCurrency(escrow.prepaidRent)} DKK</div>
+                        <div className="text-xs text-purple-600">
+                          {escrow.releaseConditions.prepaid.status === 'RELEASED' ? 'Frigivet' : 'Venter på indflytning'}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="border-t pt-4">
+                    <div className="flex justify-between items-center text-lg">
+                      <span className="font-bold text-slate-800">Total deponering:</span>
+                      <span className="font-bold text-blue-600">{formatCurrency(escrow.totalAmount)} DKK</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Transactions */}
+              <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
+                <h2 className="text-xl font-bold text-slate-800 mb-6">Transaktionshistorik</h2>
+                <div className="space-y-4">
+                  {escrow.transactions.map((transaction: any) => (
+                    <div key={transaction.id} className="flex items-center justify-between p-4 border border-slate-200 rounded-xl">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                          transaction.type === 'PAYMENT' ? 'bg-green-100' : 'bg-blue-100'
+                        }`}>
+                          {transaction.type === 'PAYMENT' ? (
+                            <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                            </svg>
+                          ) : (
+                            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-semibold text-slate-800">{transaction.description}</div>
+                          <div className="text-sm text-slate-500">
+                            {formatDateTime(transaction.date)} • Ref: {transaction.reference}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-slate-800">{formatCurrency(transaction.amount)} DKK</div>
+                        <div className={`text-xs px-2 py-1 rounded-full ${
+                          transaction.status === 'COMPLETED' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {transaction.status === 'COMPLETED' ? 'Gennemført' : 'Behandles'}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Lease Contract */}
+              <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold text-slate-800">Lejekontrakt</h2>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                      contractSigned 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-orange-100 text-orange-800'
+                    }`}>
+                      {contractSigned ? '✓ Underskrevet' : '⏳ Afventer underskrift'}
+                    </span>
+                    {!contractSigned && (
+                      <button
+                        onClick={() => setShowSignature(true)}
+                        className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
+                      >
+                        📝 Underskriv Nu
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                    <div>
+                      <div className="font-semibold text-slate-800">{escrow.leaseContract.title}</div>
+                      <div className="text-sm text-slate-600">
+                        Oprettet: {formatDateTime(escrow.leaseContract.createdDate)}
+                        {contractSigned && escrow.leaseContract.signedDate && (
+                          <span> • Underskrevet: {formatDateTime(escrow.leaseContract.signedDate)}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+                        onClick={() => {
+                          // Open contract in new window for viewing/printing
+                          const contractWindow = window.open('', '_blank', 'width=800,height=1000,scrollbars=yes')
+                          if (contractWindow) {
+                            contractWindow.document.write(`
+                              <html>
+                                <head>
+                                  <title>${escrow.leaseContract.title}</title>
+                                  <style>
+                                    body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; max-width: 800px; margin: 0 auto; }
+                                    h1 { text-align: center; color: #333; }
+                                    .contract-content { white-space: pre-line; }
+                                    .signature-section { margin-top: 30px; padding-top: 20px; border-top: 2px solid #333; }
+                                    @media print { body { padding: 10px; } }
+                                  </style>
+                                </head>
+                                <body>
+                                  <div class="contract-content">${escrow.leaseContract.content}</div>
+                                  ${contractSigned ? '<div class="signature-section"><p><strong>✓ Kontrakt digitalt underskrevet af begge parter</strong></p></div>' : ''}
+                                </body>
+                              </html>
+                            `)
+                            contractWindow.document.close()
+                          }
+                        }}
+                      >
+                        👁️ Vis Kontrakt
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Contract Parties Status */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 border border-slate-200 rounded-xl">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="font-medium text-slate-800">Udlejer</div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                          <span className="text-sm text-green-600 font-medium">Underskrevet</span>
+                        </div>
+                      </div>
+                      <div className="text-sm text-slate-600">
+                        <div>{escrow.leaseContract.parties.landlord.name}</div>
+                        <div>{escrow.leaseContract.parties.landlord.email}</div>
+                        <div className="text-xs text-slate-500 mt-1">
+                          Underskrevet: {formatDateTime(escrow.leaseContract.parties.landlord.signedDate)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 border border-slate-200 rounded-xl">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="font-medium text-slate-800">Lejer (dig)</div>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-3 h-3 rounded-full ${contractSigned ? 'bg-green-500' : 'bg-orange-500'}`}></div>
+                          <span className={`text-sm font-medium ${contractSigned ? 'text-green-600' : 'text-orange-600'}`}>
+                            {contractSigned ? 'Underskrevet' : 'Afventer'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-sm text-slate-600">
+                        <div>{escrow.leaseContract.parties.tenant.name}</div>
+                        <div>{escrow.leaseContract.parties.tenant.email}</div>
+                        {contractSigned && escrow.leaseContract.parties.tenant.signedDate && (
+                          <div className="text-xs text-slate-500 mt-1">
+                            Underskrevet: {formatDateTime(escrow.leaseContract.parties.tenant.signedDate)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {!contractSigned && (
+                    <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+                      <div className="flex items-start gap-3">
+                        <svg className="w-5 h-5 text-orange-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.182 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                        <div>
+                          <div className="font-medium text-orange-800 mb-1">Kontrakt skal underskrives</div>
+                          <div className="text-orange-700 text-sm">
+                            Du skal underskrive lejekontrakten for at aktivere din Nest fuldt ud. 
+                            Læs kontrakten grundigt og underskriv når du er klar.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {contractSigned && (
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                      <div className="flex items-start gap-3">
+                        <svg className="w-5 h-5 text-green-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div>
+                          <div className="font-medium text-green-800 mb-1">Kontrakt underskrevet!</div>
+                          <div className="text-green-700 text-sm">
+                            Lejekontrakten er nu digitalt underskrevet af begge parter og juridisk bindende. 
+                            Du kan til enhver tid se eller printe kontrakten.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Release Conditions */}
+              <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
+                <h2 className="text-xl font-bold text-slate-800 mb-6">Frigivelsesvilkår</h2>
+                <div className="space-y-6">
+                  {Object.entries(escrow.releaseConditions).map(([key, condition]: [string, any]) => (
+                    <div key={key} className="border border-slate-200 rounded-xl p-4">
+                      <div className="flex items-start gap-4">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          condition.status === 'RELEASED' ? 'bg-green-500' : 'bg-gray-300'
+                        }`}>
+                          {condition.status === 'RELEASED' ? (
+                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : (
+                            <div className="w-3 h-3 bg-white rounded-full"></div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="font-semibold text-slate-800">
+                              {key === 'deposit' ? 'Depositum' : 
+                               key === 'firstMonth' ? '1. måneds leje' : 
+                               key === 'prepaid' ? 'Forudbetalt leje' : key}
+                            </div>
+                            <div className="font-bold text-slate-800">{formatCurrency(condition.amount)} DKK</div>
+                          </div>
+                          <p className="text-slate-600 text-sm mb-2">{condition.description}</p>
+                          <div className="flex items-center gap-4 text-sm">
+                            <span className="text-slate-500">
+                              Frigives: {condition.releaseDate ? formatDate(condition.releaseDate) : condition.estimatedDate ? formatDate(condition.estimatedDate) : 'TBD'}
+                            </span>
+                            {condition.status && (
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                condition.status === 'RELEASED' 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {condition.status === 'RELEASED' ? 'Frigivet' : 'Afventer'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Contract Info */}
+              <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
+                <h3 className="text-lg font-bold text-slate-800 mb-4">Kontraktoplysninger</h3>
+                <div className="space-y-4">
+                  <div>
+                    <div className="text-sm text-slate-500 mb-1">Udlejer</div>
+                    <div className="font-semibold text-slate-800">{escrow.contractDetails.landlordName}</div>
+                    <div className="text-sm text-slate-600">{escrow.contractDetails.landlordEmail}</div>
+                    <div className="text-sm text-slate-600">{escrow.contractDetails.landlordPhone}</div>
+                  </div>
+                  
+                  <div>
+                    <div className="text-sm text-slate-500 mb-1">Lejer</div>
+                    <div className="font-semibold text-slate-800">{escrow.contractDetails.tenantName}</div>
+                    <div className="text-sm text-slate-600">{escrow.contractDetails.tenantEmail}</div>
+                  </div>
+                  
+                  <div className="border-t pt-4">
+                    <div className="text-sm text-slate-500 mb-1">Lejeperiode</div>
+                    <div className="font-semibold text-slate-800">
+                      {formatDate(escrow.contractDetails.startDate)} - {formatDate(escrow.contractDetails.endDate)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Property Info */}
+              <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
+                <h3 className="text-lg font-bold text-slate-800 mb-4">Ejendom</h3>
+                <div className="space-y-3">
+                  <div>
+                    <div className="text-sm text-slate-500 mb-1">Adresse</div>
+                    <div className="font-semibold text-slate-800">{escrow.contractDetails.propertyAddress}</div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-sm text-slate-500 mb-1">Størrelse</div>
+                      <div className="font-semibold text-slate-800">{escrow.contractDetails.propertySize}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-slate-500 mb-1">Værelser</div>
+                      <div className="font-semibold text-slate-800">{escrow.contractDetails.propertyRooms}</div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div className="text-sm text-slate-500 mb-2">Faciliteter</div>
+                    <div className="flex flex-wrap gap-2">
+                      {escrow.contractDetails.propertyFacilities.map((facility: string, index: number) => (
+                        <span key={index} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                          {facility}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Fees Breakdown */}
+              <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
+                <h3 className="text-lg font-bold text-slate-800 mb-4">Gebyrer</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-600">Service gebyr (3%)</span>
+                    <span className="font-semibold text-slate-800">{formatCurrency(escrow.fees.serviceFee)} DKK</span>
+                  </div>
+                  {escrow.fees.processingFee > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-600">Behandlingsgebyr</span>
+                      <span className="font-semibold text-slate-800">{formatCurrency(escrow.fees.processingFee)} DKK</span>
+                    </div>
+                  )}
+                  {escrow.fees.adminFee > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-600">Administrationsgebyr</span>
+                      <span className="font-semibold text-slate-800">{formatCurrency(escrow.fees.adminFee)} DKK</span>
+                    </div>
+                  )}
+                  <div className="border-t pt-3">
+                    <div className="flex justify-between items-center font-bold">
+                      <span className="text-slate-800">Total gebyrer</span>
+                      <span className="text-red-600">{formatCurrency(escrow.fees.total)} DKK</span>
+                    </div>
+                  </div>
+                  <div className="text-xs text-slate-500 mt-2">
+                    Gebyrer betales kun af lejeren. Udlejer betaler intet.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Digital Signature Modal */}
+      {showSignature && escrow && (
+        <DigitalSignature
+          onSign={handleSignContract}
+          onCancel={() => setShowSignature(false)}
+          signerName={`${user.firstName} ${user.lastName}`}
+          documentTitle={escrow.leaseContract.title}
+        />
+      )}
+    </>
+  )
+}

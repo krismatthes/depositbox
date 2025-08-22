@@ -1,0 +1,427 @@
+'use client'
+
+import { useAuth } from '@/lib/auth-context'
+import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import Navigation from '@/components/Navigation'
+
+export default function NestOnboardingPage() {
+  const { user, loading } = useAuth()
+  const router = useRouter()
+  const [currentStep, setCurrentStep] = useState(1)
+  const [isAnimating, setIsAnimating] = useState(false)
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent"></div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    router.push('/login')
+    return null
+  }
+
+  const nextStep = () => {
+    if (currentStep < 3) {
+      setIsAnimating(true)
+      setTimeout(() => {
+        setCurrentStep(currentStep + 1)
+        setIsAnimating(false)
+      }, 200)
+    } else {
+      router.push('/dashboard')
+    }
+  }
+
+  const prevStep = () => {
+    if (currentStep > 1) {
+      setIsAnimating(true)
+      setTimeout(() => {
+        setCurrentStep(currentStep - 1)
+        setIsAnimating(false)
+      }, 200)
+    }
+  }
+
+  const skipToCreate = () => {
+    router.push('/dashboard')
+  }
+
+  const goToDashboard = () => {
+    router.push('/dashboard')
+  }
+
+  return (
+    <>
+      <Navigation />
+      <div className="min-h-screen bg-white">
+        <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+          
+          {/* Floating Progress */}
+          <div className="fixed top-24 right-8 z-50">
+            <div className="bg-white/80 backdrop-blur-sm border border-gray-200 rounded-2xl p-4 shadow-lg">
+              <div className="flex flex-col space-y-3">
+                {[1, 2, 3].map((step) => (
+                  <div key={step} className="flex items-center space-x-3">
+                    <div className={`relative w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
+                      step <= currentStep 
+                        ? 'bg-blue-600 text-white shadow-lg scale-110' 
+                        : 'bg-gray-100 text-gray-400'
+                    }`}>
+                      {step <= currentStep && (
+                        <div className="absolute inset-0 bg-blue-600 rounded-full animate-ping opacity-25"></div>
+                      )}
+                      <span className="relative">{step}</span>
+                    </div>
+                    <div className="hidden sm:block">
+                      <div className={`text-xs font-medium transition-colors duration-300 ${
+                        step <= currentStep ? 'text-blue-600' : 'text-gray-400'
+                      }`}>
+                        {step === 1 && 'Intro'}
+                        {step === 2 && 'Proces'}
+                        {step === 3 && 'Fordele'}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className={`transition-all duration-500 ${isAnimating ? 'opacity-0 transform translate-y-4' : 'opacity-100 transform translate-y-0'}`}>
+            
+            {/* Step 1: What is NEST? */}
+            {currentStep === 1 && (
+              <div className="text-center max-w-3xl mx-auto">
+                <div className="mb-16">
+                  <div className="relative inline-block mb-8">
+                    <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mx-auto">
+                      <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center animate-pulse">
+                        <span className="text-2xl">🪺</span>
+                      </div>
+                    </div>
+                    <div className="absolute -inset-2 bg-blue-100 rounded-full animate-ping opacity-20"></div>
+                  </div>
+                  <h1 className="text-5xl font-light text-gray-900 mb-6 tracking-tight">
+                    Velkommen til <span className="font-semibold text-blue-600">NEST</span>
+                  </h1>
+                  <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+                    Danmarks mest betroede deponeringsservice der beskytter både udlejere og lejere
+                  </p>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                  {[
+                    {
+                      icon: (
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                      ),
+                      title: "Sikker Deponering",
+                      description: "Vi holder dine penge sikkert indtil alle betingelser er opfyldt"
+                    },
+                    {
+                      icon: (
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      ),
+                      title: "Beskytter Begge Parter",
+                      description: "Garanti for betaling til udlejere, beskyttelse mod misbrug til lejere"
+                    },
+                    {
+                      icon: (
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                      ),
+                      title: "Lynhurtig Setup",
+                      description: "Opret en deponering på under 5 minutter med fuld automatisering"
+                    },
+                    {
+                      icon: (
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16l-3-9m3 9l3-9" />
+                        </svg>
+                      ),
+                      title: "Juridisk Sikkerhed",
+                      description: "Fuldt lovligt og i overensstemmelse med dansk lejelov"
+                    }
+                  ].map((feature, index) => (
+                    <div 
+                      key={index} 
+                      className="group p-8 rounded-3xl bg-gray-50/50 hover:bg-blue-50/50 border border-gray-100 hover:border-blue-200 transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
+                    >
+                      <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mb-6 group-hover:bg-blue-600 text-gray-600 group-hover:text-white transition-all duration-300 shadow-sm">
+                        {feature.icon}
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3">{feature.title}</h3>
+                      <p className="text-gray-600 leading-relaxed">{feature.description}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-16 p-8 bg-gradient-to-r from-blue-600 to-blue-700 rounded-3xl text-white">
+                  <div className="flex items-center justify-center mb-4">
+                    <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mr-3">
+                      <span className="text-lg">🏆</span>
+                    </div>
+                    <h3 className="text-xl font-semibold">Betroet af 50.000+ udlejere</h3>
+                  </div>
+                  <p className="text-blue-100 text-lg">
+                    Vi håndterer over 2 milliarder kroner i depositum årligt
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: How does it work? */}
+            {currentStep === 2 && (
+              <div className="text-center max-w-4xl mx-auto">
+                <div className="mb-16">
+                  <div className="relative inline-block mb-8">
+                    <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto">
+                      <div className="w-16 h-16 bg-gray-600 rounded-full flex items-center justify-center">
+                        <span className="text-2xl">⚙️</span>
+                      </div>
+                    </div>
+                  </div>
+                  <h1 className="text-5xl font-light text-gray-900 mb-6 tracking-tight">
+                    Sådan <span className="font-semibold text-blue-600">Virker Det</span>
+                  </h1>
+                  <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+                    En simpel 4-trins proces der gør udlejning trygt og nemt
+                  </p>
+                </div>
+
+                <div className="space-y-8">
+                  {[
+                    {
+                      step: "01",
+                      title: "Du opretter din NEST",
+                      description: "Indtast boligoplysninger, lejebeløb og datoer. Vælg hvad din lejer skal deponere.",
+                      detail: "De fleste vælger depositum + første måneds leje for at være helt sikker.",
+                      icon: "📝"
+                    },
+                    {
+                      step: "02", 
+                      title: "Lejer modtager invitation",
+                      description: "Din lejer får en email og kan overføre pengene til jeres fælles NEST med et par klik.",
+                      detail: "Du får besked med det samme når pengene er deponeret og lejer er klar til indflytning.",
+                      icon: "📧"
+                    },
+                    {
+                      step: "03",
+                      title: "Indflytning & aktivering", 
+                      description: "Når din lejer flytter ind, frigives første måneds leje automatisk til dig.",
+                      detail: "Depositum bliver i NEST indtil lejer flytter ud - så du altid er dækket ind.",
+                      icon: "🏠"
+                    },
+                    {
+                      step: "04",
+                      title: "Fraflytning & frigivelse",
+                      description: "Når lejer flytter ud, frigives depositum automatisk eller efter jeres aftale.",
+                      detail: "Hvis der er skader, kan du trække det fra før resten frigives til lejer.",
+                      icon: "🚪"
+                    }
+                  ].map((item, index) => (
+                    <div key={index} className="bg-white border border-gray-200 rounded-3xl p-8 shadow-lg max-w-3xl mx-auto group hover:shadow-xl transition-all duration-300">
+                      <div className="flex items-start text-left">
+                        <div className="flex-shrink-0 mr-8">
+                          <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center relative group-hover:bg-blue-100 transition-colors duration-300">
+                            <span className="text-2xl">{item.icon}</span>
+                            <div className="absolute -top-2 -right-2 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                              {item.step}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex-1 pt-2">
+                          <h3 className="text-2xl font-semibold text-gray-900 mb-3">{item.title}</h3>
+                          <p className="text-lg text-gray-600 leading-relaxed mb-3">{item.description}</p>
+                          <p className="text-sm text-blue-600 bg-blue-50 inline-block px-4 py-2 rounded-full">
+                            💡 {item.detail}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-16 p-8 bg-gradient-to-r from-blue-600 to-blue-700 rounded-3xl text-white">
+                  <div className="flex items-center justify-center mb-4">
+                    <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mr-3">
+                      <span className="text-lg">💰</span>
+                    </div>
+                    <h3 className="text-xl font-semibold">Helt gratis for udlejere</h3>
+                  </div>
+                  <p className="text-blue-100 text-lg">
+                    NEST er gratis at bruge for udlejere. Lejere betaler kun et lille gebyr ved aktivering.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Why use NEST? */}
+            {currentStep === 3 && (
+              <div className="text-center max-w-4xl mx-auto">
+                <div className="mb-16">
+                  <div className="relative inline-block mb-8">
+                    <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto">
+                      <div className="w-16 h-16 bg-gray-600 rounded-full flex items-center justify-center">
+                        <span className="text-2xl">🎯</span>
+                      </div>
+                    </div>
+                  </div>
+                  <h1 className="text-5xl font-light text-gray-900 mb-6 tracking-tight">
+                    Hvorfor Vælge <span className="font-semibold text-blue-600">NEST?</span>
+                  </h1>
+                  <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+                    Se forskellen mellem traditionel udlejning og NEST
+                  </p>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-8 mb-16">
+                  <div className="p-8 bg-red-50/50 border border-red-100 rounded-3xl">
+                    <div className="flex items-center justify-center mb-6">
+                      <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                        <span className="text-2xl text-red-600">❌</span>
+                      </div>
+                      <h3 className="text-xl font-semibold text-gray-900 ml-4">Uden NEST</h3>
+                    </div>
+                    <ul className="space-y-4 text-left">
+                      {[
+                        "Risiko for at lejer ikke betaler",
+                        "Manuelt håndtering af betalinger", 
+                        "Tvister om depositum ved fraflytning",
+                        "Ingen sikkerhed for første måneds leje",
+                        "Begrænset juridisk beskyttelse"
+                      ].map((item, index) => (
+                        <li key={index} className="flex items-start text-gray-600">
+                          <span className="text-red-400 mr-3 mt-1">•</span>
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="p-8 bg-green-50/50 border border-green-100 rounded-3xl">
+                    <div className="flex items-center justify-center mb-6">
+                      <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                        <span className="text-2xl text-green-600">✅</span>
+                      </div>
+                      <h3 className="text-xl font-semibold text-gray-900 ml-4">Med NEST</h3>
+                    </div>
+                    <ul className="space-y-4 text-left">
+                      {[
+                        "100% garanti for betaling før indflytning",
+                        "Automatisk håndtering af alle betalinger",
+                        "Neutral tredjemand ved depositum-tvister", 
+                        "Sikret første måneds leje ved indflytning",
+                        "Komplet juridisk backup og support"
+                      ].map((item, index) => (
+                        <li key={index} className="flex items-start text-gray-600">
+                          <span className="text-green-400 mr-3 mt-1">•</span>
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-6 mb-16">
+                  {[
+                    {
+                      icon: "💼",
+                      title: "Professionel Udlejning",
+                      description: "Gør din udlejning mere professionel og giver lejere tillid"
+                    },
+                    {
+                      icon: "⏰", 
+                      title: "Spar Tid",
+                      description: "Ingen manuel håndtering - alt sker automatisk"
+                    },
+                    {
+                      icon: "🔒",
+                      title: "Fuld Kontrol", 
+                      description: "Du bestemmer alle betingelser og datoer"
+                    }
+                  ].map((benefit, index) => (
+                    <div key={index} className="p-6 bg-gray-50 rounded-2xl text-center">
+                      <div className="text-3xl mb-4">{benefit.icon}</div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">{benefit.title}</h3>
+                      <p className="text-gray-600">{benefit.description}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="p-8 bg-gradient-to-r from-blue-600 to-blue-700 rounded-3xl text-white">
+                  <div className="flex items-center justify-center mb-4">
+                    <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mr-3">
+                      <span className="text-lg">🚀</span>
+                    </div>
+                    <h3 className="text-2xl font-semibold">Klar til at komme i gang?</h3>
+                  </div>
+                  <p className="text-blue-100 text-lg">
+                    Opret din første NEST på under 5 minutter og oplev forskellen selv
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Navigation */}
+            <div className="mt-16 flex items-center justify-between">
+              <div className="flex space-x-4">
+                {currentStep > 1 && (
+                  <button
+                    onClick={prevStep}
+                    className="flex items-center gap-2 px-6 py-3 text-gray-600 hover:text-gray-900 font-medium transition-colors rounded-xl hover:bg-gray-50"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Tilbage
+                  </button>
+                )}
+                
+                <button
+                  onClick={goToDashboard}
+                  className="px-6 py-3 text-gray-500 hover:text-gray-700 font-medium transition-colors rounded-xl hover:bg-gray-50"
+                >
+                  Spring over
+                </button>
+              </div>
+
+              <div className="flex items-center space-x-4">
+                {currentStep < 3 ? (
+                  <button
+                    onClick={nextStep}
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                  >
+                    Næste
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                  </button>
+                ) : (
+                  <button
+                    onClick={skipToCreate}
+                    className="flex items-center gap-3 bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-bold transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                  >
+                    <span className="text-xl">🚀</span>
+                    Gå Til Dashboard
+                  </button>
+                )}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
