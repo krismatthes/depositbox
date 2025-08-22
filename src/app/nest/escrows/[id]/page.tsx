@@ -48,8 +48,9 @@ export default function NestEscrowDetailsPage({ params }: { params: { id: string
   const [claims, setClaims] = useState<any[]>([])
   const [inviteLink, setInviteLink] = useState('')
   const [showLinkGenerated, setShowLinkGenerated] = useState(false)
+  const [isDemoMode, setIsDemoMode] = useState(false)
   
-  const isNewlyCreated = searchParams.get('created') === 'true'
+  const isNewlyCreated = searchParams.get('created') === 'true' || searchParams.get('created') === 'demo'
 
   useEffect(() => {
     if (!user) {
@@ -69,6 +70,70 @@ export default function NestEscrowDetailsPage({ params }: { params: { id: string
         setClaims(claimsResponse.data.claims || [])
       } catch (error: any) {
         console.error('Error fetching escrow:', error)
+        console.log('Error code:', error.code)
+        console.log('Error status:', error.response?.status)
+        
+        // Check if it's a network/API error - try localStorage fallback
+        if (error.code === 'ERR_NETWORK' || 
+            error.message?.includes('Network Error') ||
+            error.response?.status === 404 ||
+            error.response?.status === 503) {
+          console.warn('API not available, checking localStorage for escrow')
+          
+          // Try to find escrow in localStorage
+          const userEscrows = localStorage.getItem(`escrows_${user?.id}`)
+          if (userEscrows) {
+            try {
+              const escrows = JSON.parse(userEscrows)
+              const foundEscrow = escrows.find((e: any) => e.id === params.id)
+              
+              if (foundEscrow) {
+                console.log('Found escrow in localStorage:', foundEscrow)
+                
+                // Convert localStorage format to expected API format
+                const formattedEscrow = {
+                  id: foundEscrow.id,
+                  status: foundEscrow.status,
+                  landlordId: foundEscrow.landlordId,
+                  tenantId: foundEscrow.tenantId || 'demo-tenant',
+                  depositAmount: foundEscrow.depositAmount,
+                  firstMonthAmount: foundEscrow.firstMonthAmount,
+                  prepaidAmount: foundEscrow.prepaidAmount,
+                  totalAmount: foundEscrow.depositAmount + foundEscrow.firstMonthAmount + foundEscrow.prepaidAmount,
+                  propertyAddress: foundEscrow.propertyAddress,
+                  propertyPostcode: foundEscrow.propertyPostcode,
+                  propertyCity: foundEscrow.propertyCity,
+                  propertyType: foundEscrow.propertyType,
+                  startDate: foundEscrow.startDate,
+                  endDate: foundEscrow.endDate,
+                  createdAt: foundEscrow.createdAt,
+                  landlord: foundEscrow.landlord || {
+                    id: foundEscrow.landlordId,
+                    firstName: user?.firstName || 'Demo',
+                    lastName: user?.lastName || 'Landlord',
+                    email: user?.email || 'landlord@demo.com'
+                  },
+                  tenant: foundEscrow.tenant || {
+                    id: 'demo-tenant',
+                    firstName: foundEscrow.tenantName?.split(' ')[0] || 'Demo',
+                    lastName: foundEscrow.tenantName?.split(' ').slice(1).join(' ') || 'Tenant',
+                    email: foundEscrow.tenantEmail || 'tenant@demo.com'
+                  }
+                }
+                
+                setEscrow(formattedEscrow)
+                setDeadlines([]) // No deadlines in demo mode
+                setClaims([]) // No claims in demo mode
+                setIsDemoMode(true) // Mark as demo mode
+                setLoading(false)
+                return
+              }
+            } catch (parseError) {
+              console.error('Failed to parse localStorage escrows:', parseError)
+            }
+          }
+        }
+        
         setError('Fejl ved hentning af deponering')
       } finally {
         setLoading(false)
@@ -172,6 +237,11 @@ export default function NestEscrowDetailsPage({ params }: { params: { id: string
   const handleApprove = async () => {
     if (!escrow) return
 
+    if (isDemoMode) {
+      alert('Demo mode: Vilkårene er nu godkendt! I en rigtig situation ville begge parter skulle godkende.')
+      return
+    }
+
     setActionLoading(true)
     try {
       const response = await api.post(`/nest/escrows/${escrow.id}/approve`)
@@ -192,6 +262,11 @@ export default function NestEscrowDetailsPage({ params }: { params: { id: string
 
   const handleFund = async () => {
     if (!escrow) return
+
+    if (isDemoMode) {
+      alert(`Demo mode: ${formatCurrency(escrow.totalAmount)} DKK er nu indskudt! Depositums Box er aktiv.`)
+      return
+    }
 
     const paymentReference = prompt('Indtast betalingsreference (valgfrit):')
 
@@ -218,6 +293,11 @@ export default function NestEscrowDetailsPage({ params }: { params: { id: string
   const handleRequestRelease = async () => {
     if (!escrow) return
 
+    if (isDemoMode) {
+      alert('Demo mode: Frigivelsesanmodning sendt! I en rigtig situation ville kravfristen starte nu.')
+      return
+    }
+
     const reason = prompt('Årsag til frigivelsesanmodning (valgfrit):')
 
     setActionLoading(true)
@@ -242,6 +322,15 @@ export default function NestEscrowDetailsPage({ params }: { params: { id: string
 
   const handleGenerateLink = async () => {
     if (!escrow) return
+    
+    if (isDemoMode) {
+      const demoLink = `${window.location.origin}/demo/invitation/${escrow.id}`
+      setInviteLink(demoLink)
+      setShowLinkGenerated(true)
+      alert('Demo mode: Invitation link genereret! Dette er kun til demonstration.')
+      return
+    }
+    
     setActionLoading(true)
     try {
       // Create invitation via API
@@ -393,7 +482,21 @@ export default function NestEscrowDetailsPage({ params }: { params: { id: string
                 <div>
                   <h3 className="text-lg font-semibold text-green-800">Deponering oprettet!</h3>
                   <p className="text-green-700">
-                    Din Depositums Box er nu oprettet og lejer vil modtage en invitation.
+                    Din Depositums Box er nu oprettet{isDemoMode ? ' i demo mode' : ' og lejer vil modtage en invitation'}.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {isDemoMode && (
+            <div className="bg-blue-50 rounded-xl p-6 border border-blue-200 mb-6">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">🧪</span>
+                <div>
+                  <h3 className="text-lg font-semibold text-blue-800">Demo Mode</h3>
+                  <p className="text-blue-700">
+                    Du er i demonstration mode. Alle funktioner virker, men data er kun gemt lokalt på din enhed.
                   </p>
                 </div>
               </div>
