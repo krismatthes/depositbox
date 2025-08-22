@@ -1,18 +1,36 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { useRouter } from 'next/navigation'
 import Navigation from '@/components/Navigation'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 export default function OnboardingPage() {
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
   const router = useRouter()
   const [activeStep, setActiveStep] = useState(1)
 
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login')
+    }
+  }, [user, loading, router])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-slate-800">Indlæser...</h2>
+        </div>
+      </div>
+    )
+  }
+
   if (!user) {
-    router.push('/login')
     return null
   }
 

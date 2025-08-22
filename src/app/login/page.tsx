@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
 
-export default function LoginPage() {
+export const dynamic = 'force-dynamic'
+
+function LoginContent() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -141,5 +143,24 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-50">
+        <Navigation />
+        <div className="flex items-center justify-center py-12 px-4">
+          <div className="max-w-md w-full">
+            <div className="text-center">
+              <h2 className="text-3xl font-bold text-slate-800 mb-4">Indlæser...</h2>
+            </div>
+          </div>
+        </div>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   )
 }
