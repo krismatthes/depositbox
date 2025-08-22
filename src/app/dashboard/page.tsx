@@ -47,27 +47,6 @@ export default function DashboardPage() {
         }
       }
       
-      // Load regular escrows (created via /dashboard/create-escrow)
-      const demoEscrows = localStorage.getItem('demoEscrows')
-      if (demoEscrows) {
-        try {
-          const escrows = JSON.parse(demoEscrows)
-          allItems.push(...escrows.map((e: any) => ({
-            id: e.id,
-            type: 'escrow',
-            title: `Escrow - ${e.propertyTitle}`,
-            propertyAddress: e.propertyAddress,
-            amount: e.amount,
-            sellerEmail: e.sellerEmail,
-            buyerEmail: e.buyerEmail,
-            status: e.status,
-            paymentUrl: e.paymentUrl,
-            tenantInfoMissing: false
-          })))
-        } catch (error) {
-          console.error('Failed to parse demo escrows:', error)
-        }
-      }
 
       // Load Depositums Box escrows from API instead of localStorage
       try {
@@ -336,25 +315,6 @@ export default function DashboardPage() {
                       <p className="text-slate-500 text-sm">Opret ind- eller fraflytningsrapport</p>
                     </button>
 
-                    {/* Create Escrow */}
-                    <button
-                      onClick={() => router.push('/dashboard/create-escrow')}
-                      className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 hover:shadow-xl transition-shadow text-left"
-                    >
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
-                          <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                          </svg>
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-semibold text-slate-800">Opret Escrow</h3>
-                          <p className="text-slate-600 text-sm">Sikker deponering</p>
-                        </div>
-                      </div>
-                      <p className="text-slate-500 text-sm">Opret escrow for sikker håndtering af penge</p>
-                    </button>
-
                     {/* Create Roomie Agreement */}
                     <button
                       onClick={() => router.push('/roomie-agreement/create')}
@@ -488,12 +448,6 @@ export default function DashboardPage() {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                   </svg>
                                 </div>
-                              ) : item.type === 'escrow' ? (
-                                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
-                                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                                  </svg>
-                                </div>
                               ) : item.type === 'report' ? (
                                 <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
                                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -517,13 +471,11 @@ export default function DashboardPage() {
                                 <div className="flex items-center gap-2">
                                   <span className={`text-xs font-medium px-2 py-1 rounded-full ${
                                     item.type === 'nest' ? 'bg-emerald-100 text-emerald-700' :
-                                    item.type === 'escrow' ? 'bg-orange-100 text-orange-700' :
                                     item.type === 'report' ? 'bg-purple-100 text-purple-700' :
                                     item.type === 'roomie' ? 'bg-pink-100 text-pink-700' :
                                     'bg-blue-100 text-blue-700'
                                   }`}>
                                     {item.type === 'nest' ? 'Depositums Box' :
-                                     item.type === 'escrow' ? 'Escrow' :
                                      item.type === 'report' ? 'Rapport' :
                                      item.type === 'roomie' ? 'Roomie Aftale' :
                                      'Lejekontrakt'}
@@ -540,20 +492,17 @@ export default function DashboardPage() {
                               {/* Status badge */}
                               <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium ${
                                 item.type === 'nest' ? 'bg-emerald-50 text-emerald-700' :
-                                item.type === 'escrow' ? 'bg-orange-50 text-orange-700' :
                                 item.type === 'report' ? 'bg-purple-50 text-purple-700' :
                                 item.type === 'roomie' ? 'bg-pink-50 text-pink-700' :
                                 'bg-blue-50 text-blue-700'
                               }`}>
                                 <div className={`w-2 h-2 rounded-full ${
                                   item.type === 'nest' ? 'bg-emerald-500' :
-                                  item.type === 'escrow' ? 'bg-orange-500' :
                                   item.type === 'report' ? 'bg-purple-500' :
                                   item.type === 'roomie' ? 'bg-pink-500' :
                                   'bg-blue-500'
                                 }`}></div>
                                 {item.type === 'nest' ? 'Aktiv' : 
-                                 item.type === 'escrow' ? item.status :
                                  item.type === 'report' ? `${item.reportType === 'MOVE_IN' ? 'Indflytning' : 'Fraflytning'}` : 
                                  item.type === 'roomie' ? `${item.agreementType === 'all_on_lease' ? 'Alle på kontrakt' : 'Kun hovedlejer'}` :
                                  'Klar til underskrift'}
@@ -589,20 +538,6 @@ export default function DashboardPage() {
                                   className="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors shadow-sm hover:shadow"
                                 >
                                   Se Depositums Box
-                                </button>
-                              )}
-                              {item.type === 'escrow' && (
-                                <button
-                                  onClick={() => {
-                                    if (item.paymentUrl && item.paymentUrl !== '#demo-payment') {
-                                      window.open(item.paymentUrl, '_blank')
-                                    } else {
-                                      alert(`Escrow oprettet!\n\nBeløb: ${item.amount} DKK\nEjendom: ${item.propertyAddress}\nSælger: ${item.sellerEmail}\nStatus: ${item.status}`)
-                                    }
-                                  }}
-                                  className="w-full bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors shadow-sm hover:shadow"
-                                >
-                                  {item.status === 'CREATED' ? 'Gå til Betaling' : 'Se Escrow'}
                                 </button>
                               )}
                               {item.type === 'report' && (
